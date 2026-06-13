@@ -1,3 +1,7 @@
 backend/venv
 plan.md
 .env
+backend/.env
+docker-compose.yml
+**/__pycache__/
+**/*.pyc
