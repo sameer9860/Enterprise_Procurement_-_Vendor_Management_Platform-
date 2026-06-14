@@ -30,37 +30,80 @@ A robust, enterprise-grade backend system built with **Django REST Framework (DR
 ## 🛠️ Prerequisites
 
 Make sure you have the following installed on your local system:
-* [Docker](https://docs.docker.com/get-docker/)
-* [Docker Compose](https://docs.docker.com/compose/install/)
+* [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/install/) (for containerized setup)
+* [Python 3.11+](https://www.python.org/downloads/) & [PostgreSQL](https://www.postgresql.org/download/) (for local setup)
 
 ---
 
 ## ⚙️ How to Setup & Run
 
-### 1. Configure Environment Variables
-Create a `.env` file in the `backend/` directory by copying the example environment file:
-```bash
-cp backend/.env.example backend/.env
-```
-Ensure the database credentials match your docker-compose settings.
+### Option A: Using Docker & Docker Compose (Recommended)
 
-### 2. Build and Start the Containers
-Spin up the PostgreSQL database and Django web server containers:
-```bash
-docker-compose up --build -d
-```
+1. **Configure Environment Variables**:
+   Create a `.env` file in the `backend/` directory:
+   ```bash
+   cp backend/.env.example backend/.env
+   ```
+   Ensure settings match your Docker setup.
 
-### 3. Run Database Migrations
-Apply the initial migrations to prepare the database schema:
-```bash
-docker-compose exec web python manage.py migrate
-```
+2. **Build and Start the Containers**:
+   ```bash
+   docker-compose up --build -d
+   ```
 
-### 4. Create an Administrator (Superuser)
-Create an admin account to access the Django Admin panel:
-```bash
-docker-compose exec web python manage.py createsuperuser
-```
+3. **Run Migrations**:
+   ```bash
+   docker-compose exec web python manage.py migrate
+   ```
+
+4. **Create a Superuser**:
+   ```bash
+   docker-compose exec web python manage.py createsuperuser
+   ```
+
+---
+
+### Option B: Running Locally (Without Docker)
+
+1. **Start the Database**:
+   Ensure you have a PostgreSQL server running locally, or start only the database service using Docker:
+   ```bash
+   docker-compose up -d db
+   ```
+
+2. **Configure Environment Variables**:
+   Create a `.env` file in the `backend/` directory:
+   ```bash
+   cp backend/.env.example backend/.env
+   ```
+   Modify `backend/.env` to point to your local PostgreSQL instance. If using the Docker Postgres database (Option B, Step 1), configure:
+   ```env
+   DB_HOST=localhost
+   DB_PORT=5434  # Port exposed by docker-compose for db service
+   ```
+
+3. **Set Up a Virtual Environment & Install Dependencies**:
+   ```bash
+   cd backend
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows use: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+4. **Run Migrations**:
+   ```bash
+   python manage.py migrate
+   ```
+
+5. **Create a Superuser**:
+   ```bash
+   python manage.py createsuperuser
+   ```
+
+6. **Start the Development Server**:
+   ```bash
+   python manage.py runserver
+   ```
 
 ---
 
