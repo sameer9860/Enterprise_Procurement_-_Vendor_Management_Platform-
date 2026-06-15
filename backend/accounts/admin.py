@@ -7,6 +7,8 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
         ('Procurement Info', {'fields': ('role', 'department', 'phone_number')}),
     )
+class DepartmentAdmin(admin.ModelAdmin):
+    list_display = ['name', 'budget', 'manager']    
 
 admin.site.register(User, CustomUserAdmin)
-admin.site.register(Department)
+admin.site.register(Department, DepartmentAdmin)
