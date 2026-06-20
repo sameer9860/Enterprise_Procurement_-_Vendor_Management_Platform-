@@ -1,11 +1,20 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, filters
+from django_filters.rest_framework import DjangoFilterBackend
 from .models import PurchaseRequest
 from .serializers import PurchaseRequestSerializer, PurchaseRequestListSerializer
+from .filters import PurchaseRequestFilter
+from .pagination import StandardResultsPagination
 
 
 class PurchaseRequestViewSet(viewsets.ModelViewSet):
     queryset = PurchaseRequest.objects.select_related('requester', 'department').prefetch_related('items')
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = PurchaseRequestFilter
+    search_fields = ['title', 'description', 'requester__username']
+    ordering_fields = ['created_at', 'estimated_budget', 'status']
+    ordering = ['-created_at']
+    pagination_class = StandardResultsPagination
 
     def get_serializer_class(self):
         if self.action == 'list':
