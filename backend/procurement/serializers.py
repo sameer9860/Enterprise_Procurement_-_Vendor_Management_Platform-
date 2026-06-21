@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db import transaction
-from .models import PurchaseRequest, RequestItem
+from .models import PurchaseRequest, RequestItem, Approval
 
 
 class RequestItemSerializer(serializers.ModelSerializer):
@@ -62,3 +62,15 @@ class PurchaseRequestListSerializer(serializers.ModelSerializer):
     class Meta:
         model = PurchaseRequest
         fields = ['id', 'title', 'requester_name', 'department_name', 'estimated_budget', 'status', 'item_count', 'created_at']
+
+class ApprovalSerializer(serializers.ModelSerializer):
+    approver_name = serializers.CharField(source='approver.username', read_only=True)
+
+    class Meta:
+        model = Approval
+        fields = ['id', 'request', 'approver', 'approver_name', 'action', 'comments', 'created_at']
+        read_only_fields = ['approver', 'created_at']
+        
+class ApprovalActionSerializer(serializers.Serializer):
+    action = serializers.ChoiceField(choices=['APPROVED', 'REJECTED', 'CHANGES_REQUESTED'])
+    comments = serializers.CharField(required=False, allow_blank=True)
