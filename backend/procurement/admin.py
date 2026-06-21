@@ -1,10 +1,32 @@
 from django.contrib import admin
-from .models import PurchaseRequest,RequestItem
+from .models import PurchaseRequest,RequestItem,Approval
 
 
-admin.site.register(PurchaseRequest)
+class PurchaseRequestAdmin(admin.ModelAdmin):
+    list_display = ['id', 'title', 'requester_name', 'department_name', 'estimated_budget', 'status', 'item_count', 'created_at']
 
-admin.site.register(RequestItem)
+    def requester_name(self, obj):
+        return obj.requester.username
+    requester_name.short_description = 'Requester'
+
+    def department_name(self, obj):
+        return obj.department.name
+    department_name.short_description = 'Department'
+
+    def item_count(self, obj):
+        return obj.items.count()
+    item_count.short_description = 'Item Count'
+    
+class ApprovalAdmin(admin.ModelAdmin):
+    list_display = ['id', 'request', 'approver', 'action', 'comments', 'created_at']     
+    
+class RequestItemAdmin(admin.ModelAdmin):
+    list_display = ['id', 'request', 'item_name', 'quantity', 'estimated_unit_price', 'specifications', 'estimated_total']
+    
+admin.site.register(PurchaseRequest,PurchaseRequestAdmin)
+
+admin.site.register(RequestItem,RequestItemAdmin)
 
 
+admin.site.register(Approval,ApprovalAdmin)
 
