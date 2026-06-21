@@ -1,9 +1,13 @@
-from rest_framework import viewsets, permissions, filters
+from rest_framework import viewsets, permissions, filters, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import PurchaseRequest
-from .serializers import PurchaseRequestSerializer, PurchaseRequestListSerializer
+from .models import PurchaseRequest, Approval
+from .serializers import PurchaseRequestSerializer, PurchaseRequestListSerializer, ApprovalSerializer, ApprovalActionSerializer
 from .filters import PurchaseRequestFilter
 from .pagination import StandardResultsPagination
+from .mixins import RoleRequiredMixin
+from accounts.permissions import IsManagerOrAdmin
 
 
 class PurchaseRequestViewSet(viewsets.ModelViewSet):
@@ -34,3 +38,52 @@ class PurchaseRequestViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(requester=self.request.user, department=self.request.user.department)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsManagerOrAdmin])
+    def approve_action(self, request, pk=None):
+        purchase_request = self.get_object()
+
+        if purchase_request.status != PurchaseRequest.Status.PENDING_APPROVAL:
+            return Response(
+                {"error": f"Cannot act on request with status '{purchase_request.status}'"},
+                status=400
+            )
+
+        # Manager can only approve requests from their own department
+        if request.user.role == 'MANAGER' and purchase_request.department != request.user.department:
+            return Response({"error": "You can only approve requests from your department."}, status=403)
+
+        serializer = ApprovalActionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        action_value = serializer.validated_data['action']
+        comments = serializer.validated_data.get('comments', '')
+
+        # Create approval record
+        Approval.objects.create(
+            request=purchase_request,
+            approver=request.user,
+            action=action_value,
+            comments=comments
+        )
+
+        # Update request status based on action
+        status_map = {
+            'APPROVED': PurchaseRequest.Status.APPROVED,
+            'REJECTED': PurchaseRequest.Status.REJECTED,
+            'CHANGES_REQUESTED': PurchaseRequest.Status.CHANGES_REQUESTED,
+        }
+        purchase_request.status = status_map[action_value]
+        purchase_request.save()
+
+        return Response({
+            "message": f"Request {action_value.lower()} successfully.",
+            "status": purchase_request.status
+        })
+
+    @action(detail=True, methods=['get'])
+    def approval_history(self, request, pk=None):
+        purchase_request = self.get_object()
+        approvals = purchase_request.approvals.all()
+        serializer = ApprovalSerializer(approvals, many=True)
+        return Response(serializer.data)    
