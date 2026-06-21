@@ -47,3 +47,21 @@ class RequestItem(models.Model):
 
     def __str__(self):
         return f"{self.item_name} x{self.quantity}"
+
+class Approval(models.Model):
+    class Action(models.TextChoices):
+        APPROVED = 'APPROVED', 'Approved'
+        REJECTED = 'REJECTED', 'Rejected'
+        CHANGES_REQUESTED = 'CHANGES_REQUESTED', 'Changes Requested'
+
+    request = models.ForeignKey(PurchaseRequest, on_delete=models.CASCADE, related_name='approvals')
+    approver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='approvals_given')
+    action = models.CharField(max_length=20, choices=Action.choices)
+    comments = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.request} - {self.action} by {self.approver}"        
