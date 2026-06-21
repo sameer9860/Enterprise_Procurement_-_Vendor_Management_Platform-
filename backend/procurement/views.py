@@ -6,9 +6,8 @@ from .models import PurchaseRequest, Approval
 from .serializers import PurchaseRequestSerializer, PurchaseRequestListSerializer, ApprovalSerializer, ApprovalActionSerializer
 from .filters import PurchaseRequestFilter
 from .pagination import StandardResultsPagination
-from .mixins import RoleRequiredMixin
+from accounts.mixins import RoleRequiredMixin
 from accounts.permissions import IsManagerOrAdmin
-
 
 class PurchaseRequestViewSet(viewsets.ModelViewSet):
     queryset = PurchaseRequest.objects.select_related('requester', 'department').prefetch_related('items')
