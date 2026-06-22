@@ -80,6 +80,26 @@ class PurchaseRequestViewSet(viewsets.ModelViewSet):
             "status": purchase_request.status
         })
 
+    @action(detail=True, methods=['post'])
+    def resubmit(self, request, pk=None):
+        purchase_request = self.get_object()
+
+        if purchase_request.requester != request.user:
+            return Response({"error": "Only the requester can resubmit."}, status=403)
+
+        if purchase_request.status != PurchaseRequest.Status.CHANGES_REQUESTED:
+            return Response({"error": "Request is not in 'Changes Requested' status."}, status=400)
+
+        # Update items if provided
+        serializer = PurchaseRequestSerializer(purchase_request, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        purchase_request.status = PurchaseRequest.Status.PENDING_APPROVAL
+        purchase_request.save()
+
+        return Response({"message": "Request resubmitted for approval.", "status": purchase_request.status})
+
     @action(detail=True, methods=['get'])
     def approval_history(self, request, pk=None):
         purchase_request = self.get_object()
