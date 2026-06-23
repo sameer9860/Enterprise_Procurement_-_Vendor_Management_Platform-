@@ -8,6 +8,7 @@ from .filters import PurchaseRequestFilter
 from .pagination import StandardResultsPagination
 from accounts.mixins import RoleRequiredMixin
 from accounts.permissions import IsManagerOrAdmin
+from audit.utils import log_action
 
 class PurchaseRequestViewSet(viewsets.ModelViewSet):
     queryset = PurchaseRequest.objects.select_related('requester', 'department').prefetch_related('items')
@@ -36,7 +37,20 @@ class PurchaseRequestViewSet(viewsets.ModelViewSet):
         return qs.none()
 
     def perform_create(self, serializer):
-        serializer.save(requester=self.request.user, department=self.request.user.department)
+        instance = serializer.save(requester=self.request.user, department=self.request.user.department)
+        log_action(self.request.user, 'CREATE', instance, 
+                    details={"title": instance.title, "budget": str(instance.estimated_budget)}, 
+                    request=self.request)
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        log_action(self.request.user, 'UPDATE', instance, 
+                    details={"status": instance.status}, 
+                    request=self.request)
+
+    def perform_destroy(self, instance):
+        log_action(self.request.user, 'DELETE', instance, request=self.request)
+        instance.delete()
 
     @action(detail=True, methods=['post'], permission_classes=[IsManagerOrAdmin])
     def approve_action(self, request, pk=None):
@@ -75,6 +89,9 @@ class PurchaseRequestViewSet(viewsets.ModelViewSet):
         purchase_request.status = status_map[action_value]
         purchase_request.save()
 
+        log_action(request.user, action_value, purchase_request,
+                    details={"comments": comments}, request=request)
+
         return Response({
             "message": f"Request {action_value.lower()} successfully.",
             "status": purchase_request.status
@@ -105,4 +122,4 @@ class PurchaseRequestViewSet(viewsets.ModelViewSet):
         purchase_request = self.get_object()
         approvals = purchase_request.approvals.all()
         serializer = ApprovalSerializer(approvals, many=True)
-        return Response(serializer.data)    
+        return Response(serializer.data)        
