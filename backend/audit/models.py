@@ -3,7 +3,7 @@ from django.conf import settings
 
 class AuditLog(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='audit_logs')
-    action = models.CharField(max_length=50)  # CREATE, UPDATE, DELETE, APPROVE, REJECT, etc.
+    action = models.CharField(max_length=50)  
     model_name = models.CharField(max_length=100)
     object_id = models.PositiveIntegerField(null=True, blank=True)
     object_repr = models.CharField(max_length=255, blank=True)
