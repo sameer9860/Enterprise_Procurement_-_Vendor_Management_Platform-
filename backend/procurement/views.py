@@ -115,6 +115,9 @@ class PurchaseRequestViewSet(viewsets.ModelViewSet):
         purchase_request.status = PurchaseRequest.Status.PENDING_APPROVAL
         purchase_request.save()
 
+        log_action(request.user, 'RESUBMIT', purchase_request,
+                   details={"new_status": purchase_request.status}, request=request)
+
         return Response({"message": "Request resubmitted for approval.", "status": purchase_request.status})
 
     @action(detail=True, methods=['get'])

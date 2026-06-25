@@ -1,0 +1,624 @@
+{
+  "info": {
+    "_postman_id": "a988d8b6-963d-4c5c-bb12-0761e2b0a1d4",
+    "name": "Phase 2 End-to-End Walkthrough",
+    "description": "Postman Collection for Day 11 end-to-end manual testing walkthrough of Phase 2 (Procurement Approval Workflow and Audit Logging).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01. Login as Employee",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var jsonData = pm.response.json();",
+              "if (jsonData.access) {",
+              "    pm.collectionVariables.set(\"accessToken\", jsonData.access);",
+              "    pm.test(\"Token stored successfully\", function () {",
+              "        pm.expect(jsonData.access).to.be.a('string');",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"employee1\",\n  \"password\": \"Password123!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "02. Employee: Create Purchase Request",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var jsonData = pm.response.json();",
+              "if (jsonData.id) {",
+              "    pm.collectionVariables.set(\"requestId\", jsonData.id);",
+              "    pm.test(\"Request ID stored successfully\", function () {",
+              "        pm.expect(jsonData.id).to.be.a('number');",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"50 Dell Laptops\",\n  \"description\": \"For new engineering hires\",\n  \"estimated_budget\": 50000.00,\n  \"items\": [\n    {\n      \"item_name\": \"Dell Latitude 5440\",\n      \"quantity\": 50,\n      \"estimated_unit_price\": 1000.00,\n      \"specifications\": \"16GB RAM, i7\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/procurement/requests/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "procurement",
+            "requests",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "03. Employee: GET own requests (pagination & filters)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/procurement/requests/?status=PENDING_APPROVAL&page=1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "procurement",
+            "requests",
+            ""
+          ],
+          "query": [
+            {
+              "key": "status",
+              "value": "PENDING_APPROVAL"
+            },
+            {
+              "key": "page",
+              "value": "1"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "04. Login as Manager",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var jsonData = pm.response.json();",
+              "if (jsonData.access) {",
+              "    pm.collectionVariables.set(\"accessToken\", jsonData.access);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"manager1\",\n  \"password\": \"Password123!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "05. Manager: GET department requests",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/procurement/requests/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "procurement",
+            "requests",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "06. Manager: Request Changes",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"action\": \"CHANGES_REQUESTED\",\n  \"comments\": \"Reduce quantity to 40 laptops due to budget adjustments.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/procurement/requests/{{requestId}}/approve_action/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "procurement",
+            "requests",
+            "{{requestId}}",
+            "approve_action",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "07. Login as Employee (for Resubmission)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var jsonData = pm.response.json();",
+              "if (jsonData.access) {",
+              "    pm.collectionVariables.set(\"accessToken\", jsonData.access);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"employee1\",\n  \"password\": \"Password123!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "08. Employee: Resubmit with updated items",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"40 Dell Laptops\",\n  \"description\": \"Updated budget and count after manager review\",\n  \"estimated_budget\": 40000.00,\n  \"items\": [\n    {\n      \"item_name\": \"Dell Latitude 5440\",\n      \"quantity\": 40,\n      \"estimated_unit_price\": 1000.00,\n      \"specifications\": \"16GB RAM, i7\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/procurement/requests/{{requestId}}/resubmit/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "procurement",
+            "requests",
+            "{{requestId}}",
+            "resubmit",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "09. Login as Manager (for Approval)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var jsonData = pm.response.json();",
+              "if (jsonData.access) {",
+              "    pm.collectionVariables.set(\"accessToken\", jsonData.access);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"manager1\",\n  \"password\": \"Password123!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "10. Manager: Approve",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"action\": \"APPROVED\",\n  \"comments\": \"Looks good. Confirmed with HR on hiring headcounts.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/procurement/requests/{{requestId}}/approve_action/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "procurement",
+            "requests",
+            "{{requestId}}",
+            "approve_action",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "11. Login as Admin",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var jsonData = pm.response.json();",
+              "if (jsonData.access) {",
+              "    pm.collectionVariables.set(\"accessToken\", jsonData.access);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"admin1\",\n  \"password\": \"Password123!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "12. Admin: View Audit Logs",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/audit/logs/?model_name=PurchaseRequest",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "audit",
+            "logs",
+            ""
+          ],
+          "query": [
+            {
+              "key": "model_name",
+              "value": "PurchaseRequest"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "13. Login as Procurement",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var jsonData = pm.response.json();",
+              "if (jsonData.access) {",
+              "    pm.collectionVariables.set(\"accessToken\", jsonData.access);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"procurement1\",\n  \"password\": \"Password123!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "14. Procurement: View All Requests",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/procurement/requests/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "procurement",
+            "requests",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "15. Login as Finance",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var jsonData = pm.response.json();",
+              "if (jsonData.access) {",
+              "    pm.collectionVariables.set(\"accessToken\", jsonData.access);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"finance1\",\n  \"password\": \"Password123!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "16. Finance: View All Requests",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/procurement/requests/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "procurement",
+            "requests",
+            ""
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "requestId",
+      "value": ""
+    }
+  ]
+}

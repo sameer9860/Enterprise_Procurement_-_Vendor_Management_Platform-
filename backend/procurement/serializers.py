@@ -12,7 +12,7 @@ class RequestItemSerializer(serializers.ModelSerializer):
 
 
 class PurchaseRequestSerializer(serializers.ModelSerializer):
-    items = RequestItemSerializer(many=True)
+    items = RequestItemSerializer(many=True, allow_empty=False)
     requester_name = serializers.CharField(source='requester.username', read_only=True)
     department_name = serializers.CharField(source='department.name', read_only=True)
 
@@ -23,7 +23,7 @@ class PurchaseRequestSerializer(serializers.ModelSerializer):
             'title', 'description', 'estimated_budget', 'status',
             'items', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['requester', 'status', 'created_at', 'updated_at']
+        read_only_fields = ['requester', 'department', 'status', 'created_at', 'updated_at']
 
     def validate_items(self, items):
         if not items:
