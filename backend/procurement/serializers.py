@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db import transaction
-from .models import PurchaseRequest, RequestItem, Approval
+from .models import PurchaseRequest, RequestItem, Approval, VendorCategory, Vendor, VendorDocument
 
 
 class RequestItemSerializer(serializers.ModelSerializer):
@@ -73,4 +73,56 @@ class ApprovalSerializer(serializers.ModelSerializer):
         
 class ApprovalActionSerializer(serializers.Serializer):
     action = serializers.ChoiceField(choices=['APPROVED', 'REJECTED', 'CHANGES_REQUESTED'])
+    comments = serializers.CharField(required=False, allow_blank=True)
+
+
+class VendorCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VendorCategory
+        fields = ['id', 'name', 'description']
+
+
+class VendorDocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VendorDocument
+        fields = ['id', 'document_type', 'file_name', 'file_url', 'uploaded_at']
+        read_only_fields = ['uploaded_at']
+
+
+class VendorSerializer(serializers.ModelSerializer):
+    user_email = serializers.CharField(source='user.email', read_only=True)
+    categories = VendorCategorySerializer(many=True, read_only=True)
+    category_ids = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=VendorCategory.objects.all(),
+        write_only=True,
+        source='categories'
+    )
+    documents = VendorDocumentSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Vendor
+        fields = [
+            'id', 'user', 'user_email', 'company_name', 'registration_number',
+            'address', 'city', 'country', 'website', 'tax_number',
+            'status', 'rating', 'categories', 'category_ids',
+            'documents', 'verified_at', 'created_at'
+        ]
+        read_only_fields = ['user', 'status', 'rating', 'verified_at', 'created_at']
+
+
+class VendorListSerializer(serializers.ModelSerializer):
+    """Lightweight serializer for list views"""
+    category_names = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Vendor
+        fields = ['id', 'company_name', 'city', 'country', 'status', 'rating', 'category_names']
+
+    def get_category_names(self, obj):
+        return list(obj.categories.values_list('name', flat=True))
+
+
+class VendorVerifySerializer(serializers.Serializer):
+    action = serializers.ChoiceField(choices=['ACTIVE', 'SUSPENDED', 'BLACKLISTED'])
     comments = serializers.CharField(required=False, allow_blank=True)
