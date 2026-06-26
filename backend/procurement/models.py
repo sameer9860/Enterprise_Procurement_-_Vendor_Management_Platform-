@@ -64,4 +64,66 @@ class Approval(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.request} - {self.action} by {self.approver}"        
+        return f"{self.request} - {self.action} by {self.approver}"  
+#vendor models
+class Vendor(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending Verification'
+        ACTIVE = 'ACTIVE', 'Active'
+        SUSPENDED = 'SUSPENDED', 'Suspended'
+        BLACKLISTED = 'BLACKLISTED', 'Blacklisted'
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='vendor_profile'
+    )
+    company_name = models.CharField(max_length=255)
+    registration_number = models.CharField(max_length=100, unique=True)
+    address = models.TextField()
+    city = models.CharField(max_length=100)
+    country = models.CharField(max_length=100)
+    website = models.URLField(blank=True)
+    tax_number = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    categories = models.ManyToManyField('VendorCategory', related_name='vendors', blank=True)
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='verified_vendors'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.company_name} ({self.status})"
+
+
+class VendorCategory(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+class VendorDocument(models.Model):
+    class DocumentType(models.TextChoices):
+        REGISTRATION = 'REGISTRATION', 'Company Registration'
+        TAX = 'TAX', 'Tax Certificate'
+        LICENSE = 'LICENSE', 'Business License'
+        OTHER = 'OTHER', 'Other'
+
+    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name='documents')
+    document_type = models.CharField(max_length=20, choices=DocumentType.choices)
+    file_name = models.CharField(max_length=255)
+    file_url = models.URLField()  # S3 URL later, local path for now
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.vendor.company_name} - {self.document_type}"
