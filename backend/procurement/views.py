@@ -1,4 +1,5 @@
 from rest_framework import viewsets, permissions, filters, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
@@ -9,6 +10,16 @@ from .pagination import StandardResultsPagination
 from accounts.mixins import RoleRequiredMixin
 from accounts.permissions import IsManagerOrAdmin
 from audit.utils import log_action
+
+from django.utils import timezone
+
+from .models import Vendor, VendorCategory
+
+from .serializers import (
+    VendorSerializer, VendorListSerializer,
+    VendorCategorySerializer, VendorVerifySerializer
+)
+from accounts.permissions import IsVendor, IsProcurement, IsAdmin
 
 class PurchaseRequestViewSet(viewsets.ModelViewSet):
     queryset = PurchaseRequest.objects.select_related('requester', 'department').prefetch_related('items')
@@ -126,3 +137,79 @@ class PurchaseRequestViewSet(viewsets.ModelViewSet):
         approvals = purchase_request.approvals.all()
         serializer = ApprovalSerializer(approvals, many=True)
         return Response(serializer.data)        
+
+class VendorViewSet(viewsets.ModelViewSet):
+    queryset = Vendor.objects.select_related('user').prefetch_related('categories', 'documents')
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return VendorListSerializer
+        return VendorSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.role == 'VENDOR':
+            return qs.filter(user=user)
+        elif user.role in ['PROCUREMENT', 'ADMIN', 'MANAGER', 'FINANCE']:
+            return qs
+        return qs.none()
+
+    def get_permissions(self):
+        if self.action == 'create':
+            return [permissions.IsAuthenticated()]
+        if self.action in ['verify_vendor']:
+            return [IsProcurement()]
+        return [permissions.IsAuthenticated()]
+
+    def perform_create(self, serializer):
+        if self.request.user.role != 'VENDOR':
+            raise ValidationError("Only users with VENDOR role can create vendor profiles.")
+        if Vendor.objects.filter(user=self.request.user).exists():
+            raise ValidationError("Vendor profile already exists for this user.")
+        instance = serializer.save(user=self.request.user)
+        log_action(self.request.user, 'CREATE_VENDOR', instance, request=self.request)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsProcurement])
+    def verify_vendor(self, request, pk=None):
+        vendor = self.get_object()
+        serializer = VendorVerifySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        action_value = serializer.validated_data['action']
+        vendor.status = action_value
+
+        if action_value == 'ACTIVE':
+            vendor.verified_at = timezone.now()
+            vendor.verified_by = request.user
+
+        vendor.save()
+
+        log_action(request.user, f'VENDOR_{action_value}', vendor,
+                    details={"comments": serializer.validated_data.get('comments', '')},
+                    request=request)
+
+        return Response({
+            "message": f"Vendor {action_value.lower()} successfully.",
+            "vendor_id": vendor.id,
+            "status": vendor.status
+        })
+
+    @action(detail=False, methods=['get'])
+    def active_vendors(self, request):
+        """Quick endpoint to get all active vendors for RFQ invitations"""
+        vendors = Vendor.objects.filter(status='ACTIVE').select_related('user').prefetch_related('categories')
+        serializer = VendorListSerializer(vendors, many=True)
+        return Response(serializer.data)
+
+
+class VendorCategoryViewSet(viewsets.ModelViewSet):
+    queryset = VendorCategory.objects.all()
+    serializer_class = VendorCategorySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsAdmin()]
+        return [permissions.IsAuthenticated()]
