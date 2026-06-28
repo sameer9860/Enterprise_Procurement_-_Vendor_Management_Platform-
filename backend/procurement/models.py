@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 class PurchaseRequest(models.Model):
     class Status(models.TextChoices):
@@ -127,3 +128,58 @@ class VendorDocument(models.Model):
 
     def __str__(self):
         return f"{self.vendor.company_name} - {self.document_type}"
+
+class RFQ(models.Model):
+    class Status(models.TextChoices):
+        OPEN = 'OPEN', 'Open for Bids'
+        CLOSED = 'CLOSED', 'Closed'
+        AWARDED = 'AWARDED', 'Awarded'
+        CANCELLED = 'CANCELLED', 'Cancelled'
+
+    purchase_request = models.OneToOneField(
+        PurchaseRequest,
+        on_delete=models.CASCADE,
+        related_name='rfq'
+    )
+    rfq_number = models.CharField(max_length=50, unique=True)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    deadline = models.DateTimeField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.OPEN)
+    invited_vendors = models.ManyToManyField(
+        Vendor,
+        related_name='invited_rfqs',
+        blank=True
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='created_rfqs'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.rfq_number} - {self.title}"
+
+    @classmethod
+    def generate_rfq_number(cls):
+    
+        year = timezone.now().year
+        count = cls.objects.filter(created_at__year=year).count() + 1
+        return f"RFQ-{year}-{str(count).zfill(5)}"
+
+
+class RFQItem(models.Model):
+    rfq = models.ForeignKey(RFQ, on_delete=models.CASCADE, related_name='items')
+    item_name = models.CharField(max_length=255)
+    quantity = models.PositiveIntegerField()
+    specifications = models.TextField(blank=True)
+    estimated_unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.rfq.rfq_number} - {self.item_name}"        
