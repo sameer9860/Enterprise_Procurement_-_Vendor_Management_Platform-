@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db import transaction
-from .models import PurchaseRequest, RequestItem, Approval, VendorCategory, Vendor, VendorDocument
+from .models import PurchaseRequest, RequestItem, Approval, VendorCategory, Vendor, VendorDocument, RFQ, RFQItem
 
 
 class RequestItemSerializer(serializers.ModelSerializer):
@@ -126,3 +126,53 @@ class VendorListSerializer(serializers.ModelSerializer):
 class VendorVerifySerializer(serializers.Serializer):
     action = serializers.ChoiceField(choices=['ACTIVE', 'SUSPENDED', 'BLACKLISTED'])
     comments = serializers.CharField(required=False, allow_blank=True)
+
+class RFQItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RFQItem
+        fields = ['id', 'item_name', 'quantity', 'specifications', 'estimated_unit_price']
+
+
+class RFQSerializer(serializers.ModelSerializer):
+    items = RFQItemSerializer(many=True, read_only=True)
+    invited_vendor_names = serializers.SerializerMethodField()
+    purchase_request_title = serializers.CharField(source='purchase_request.title', read_only=True)
+    created_by_name = serializers.CharField(source='created_by.username', read_only=True)
+
+    class Meta:
+        model = RFQ
+        fields = [
+            'id', 'rfq_number', 'title', 'description',
+            'purchase_request', 'purchase_request_title',
+            'deadline', 'status', 'items',
+            'invited_vendors', 'invited_vendor_names',
+            'created_by', 'created_by_name',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['rfq_number', 'created_by', 'created_at', 'updated_at']
+
+    def get_invited_vendor_names(self, obj):
+        return list(obj.invited_vendors.values_list('company_name', flat=True))
+
+
+class RFQCreateSerializer(serializers.Serializer):
+    """Used to create RFQ from approved PurchaseRequest"""
+    deadline = serializers.DateTimeField()
+    description = serializers.CharField(required=False, allow_blank=True)
+    vendor_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        help_text="List of vendor IDs to invite. Leave empty to invite all active vendors."
+    )
+
+
+class RFQListSerializer(serializers.ModelSerializer):
+    purchase_request_title = serializers.CharField(source='purchase_request.title', read_only=True)
+    bid_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RFQ
+        fields = ['id', 'rfq_number', 'title', 'status', 'deadline', 'purchase_request_title', 'bid_count', 'created_at']
+
+    def get_bid_count(self, obj):
+        return obj.bids.count()    
