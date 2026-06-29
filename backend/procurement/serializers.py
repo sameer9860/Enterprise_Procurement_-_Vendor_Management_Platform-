@@ -175,4 +175,4 @@ class RFQListSerializer(serializers.ModelSerializer):
         fields = ['id', 'rfq_number', 'title', 'status', 'deadline', 'purchase_request_title', 'bid_count', 'created_at']
 
     def get_bid_count(self, obj):
-        return obj.bids.count()    
+        return 0    
