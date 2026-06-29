@@ -12,6 +12,7 @@ from accounts.permissions import IsManagerOrAdmin
 from audit.utils import log_action
 
 from django.utils import timezone
+from django.db.models import Q
 
 from .models import Vendor, VendorCategory
 
@@ -20,6 +21,10 @@ from .serializers import (
     VendorCategorySerializer, VendorVerifySerializer
 )
 from accounts.permissions import IsVendor, IsProcurement, IsAdmin
+
+from .models import RFQ, RFQItem
+from .serializers import RFQSerializer, RFQListSerializer, RFQCreateSerializer
+
 
 class PurchaseRequestViewSet(viewsets.ModelViewSet):
     queryset = PurchaseRequest.objects.select_related('requester', 'department').prefetch_related('items')
@@ -213,3 +218,113 @@ class VendorCategoryViewSet(viewsets.ModelViewSet):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsAdmin()]
         return [permissions.IsAuthenticated()]
+
+class RFQViewSet(viewsets.ModelViewSet):
+    queryset = RFQ.objects.select_related(
+        'purchase_request', 'created_by'
+    ).prefetch_related('items', 'invited_vendors')
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return RFQListSerializer
+        return RFQSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.role == 'VENDOR':
+            # Vendor sees only RFQs they are invited to + open RFQs
+            try:
+                vendor = user.vendor_profile
+                return qs.filter(
+                    status='OPEN'
+                ).filter(
+                    Q(invited_vendors=vendor) | Q(invited_vendors__isnull=True)
+                ).distinct()
+            except Vendor.DoesNotExist:
+                return qs.none()
+        elif user.role in ['PROCUREMENT', 'ADMIN']:
+            return qs
+        elif user.role in ['MANAGER', 'FINANCE']:
+            return qs.filter(status__in=['OPEN', 'CLOSED', 'AWARDED'])
+        return qs.none()
+
+    def get_permissions(self):
+        if self.action in ['create', 'create_from_request', 'close_rfq', 'update', 'partial_update']:
+            return [IsProcurement()]
+        return [permissions.IsAuthenticated()]
+
+    @action(detail=False, methods=['post'], permission_classes=[IsProcurement])
+    def create_from_request(self, request):
+        """Create RFQ from an approved PurchaseRequest"""
+        request_id = request.data.get('request_id')
+
+        if not request_id:
+            return Response({"error": "request_id is required."}, status=400)
+
+        try:
+            purchase_request = PurchaseRequest.objects.get(id=request_id)
+        except PurchaseRequest.DoesNotExist:
+            return Response({"error": "Purchase request not found."}, status=404)
+
+        if purchase_request.status != PurchaseRequest.Status.APPROVED:
+            return Response(
+                {"error": f"Request must be APPROVED before creating RFQ. Current status: {purchase_request.status}"},
+                status=400
+            )
+
+        if hasattr(purchase_request, 'rfq'):
+            return Response({"error": "RFQ already exists for this request."}, status=400)
+
+        serializer = RFQCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Create RFQ
+        rfq = RFQ.objects.create(
+            purchase_request=purchase_request,
+            rfq_number=RFQ.generate_rfq_number(),
+            title=purchase_request.title,
+            description=serializer.validated_data.get('description', purchase_request.description),
+            deadline=serializer.validated_data['deadline'],
+            created_by=request.user
+        )
+
+        # Copy items from PurchaseRequest to RFQ
+        for item in purchase_request.items.all():
+            RFQItem.objects.create(
+                rfq=rfq,
+                item_name=item.item_name,
+                quantity=item.quantity,
+                specifications=item.specifications,
+                estimated_unit_price=item.estimated_unit_price
+            )
+
+        # Invite vendors
+        vendor_ids = serializer.validated_data.get('vendor_ids', [])
+        if vendor_ids:
+            vendors = Vendor.objects.filter(id__in=vendor_ids, status='ACTIVE')
+        else:
+            vendors = Vendor.objects.filter(status='ACTIVE')
+
+        rfq.invited_vendors.set(vendors)
+
+        # Update purchase request status
+        purchase_request.status = PurchaseRequest.Status.RFQ_CREATED
+        purchase_request.save()
+
+        log_action(request.user, 'CREATE_RFQ', rfq,
+                    details={"rfq_number": rfq.rfq_number, "vendors_invited": vendors.count()},
+                    request=request)
+
+        return Response(RFQSerializer(rfq).data, status=201)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsProcurement])
+    def close_rfq(self, request, pk=None):
+        rfq = self.get_object()
+        if rfq.status != 'OPEN':
+            return Response({"error": "Only OPEN RFQs can be closed."}, status=400)
+        rfq.status = 'CLOSED'
+        rfq.save()
+        log_action(request.user, 'CLOSE_RFQ', rfq, request=request)
+        return Response({"message": "RFQ closed. No more bids will be accepted.", "rfq_number": rfq.rfq_number})        
