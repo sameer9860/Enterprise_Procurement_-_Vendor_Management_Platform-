@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db import transaction
-from .models import PurchaseRequest, RequestItem, Approval, VendorCategory, Vendor, VendorDocument, RFQ, RFQItem
+from .models import PurchaseRequest, RequestItem, Approval, VendorCategory, Vendor, VendorDocument, RFQ, RFQItem,Bid,BidItem
 
 
 class RequestItemSerializer(serializers.ModelSerializer):
@@ -175,4 +175,84 @@ class RFQListSerializer(serializers.ModelSerializer):
         fields = ['id', 'rfq_number', 'title', 'status', 'deadline', 'purchase_request_title', 'bid_count', 'created_at']
 
     def get_bid_count(self, obj):
-        return 0    
+        return 0
+
+
+class BidItemSerializer(serializers.ModelSerializer):
+    rfq_item_name = serializers.CharField(source='rfq_item.item_name', read_only=True)
+
+    class Meta:
+        model = BidItem
+        fields = ['id', 'rfq_item', 'rfq_item_name', 'unit_price', 'quantity', 'total_price']
+        read_only_fields = ['total_price']
+
+
+class BidSerializer(serializers.ModelSerializer):
+    items = BidItemSerializer(many=True)
+    vendor_name = serializers.CharField(source='vendor.company_name', read_only=True)
+    rfq_number = serializers.CharField(source='rfq.rfq_number', read_only=True)
+
+    class Meta:
+        model = Bid
+        fields = [
+            'id', 'rfq', 'rfq_number', 'vendor', 'vendor_name',
+            'total_amount', 'delivery_days', 'validity_days',
+            'notes', 'status', 'items', 'submitted_at', 'updated_at'
+        ]
+        read_only_fields = ['vendor', 'status', 'submitted_at', 'updated_at']
+
+    def validate(self, data):
+        rfq = data.get('rfq')
+        if rfq and rfq.status != 'OPEN':
+            raise serializers.ValidationError("This RFQ is not open for bidding.")
+        return data
+
+    @transaction.atomic
+    def create(self, validated_data):
+        items_data = validated_data.pop('items')
+        bid = Bid.objects.create(**validated_data)
+        for item_data in items_data:
+            BidItem.objects.create(bid=bid, **item_data)
+        return bid
+
+
+class BidListSerializer(serializers.ModelSerializer):
+    vendor_name = serializers.CharField(source='vendor.company_name', read_only=True)
+    rfq_number = serializers.CharField(source='rfq.rfq_number', read_only=True)
+
+    class Meta:
+        model = Bid
+        fields = ['id', 'rfq_number', 'vendor_name', 'total_amount', 'delivery_days', 'status', 'submitted_at']
+
+
+class BidComparisonSerializer(serializers.ModelSerializer):
+    """Detailed serializer for side-by-side comparison"""
+    vendor_name = serializers.CharField(source='vendor.company_name', read_only=True)
+    vendor_rating = serializers.DecimalField(source='vendor.rating', max_digits=3, decimal_places=2, read_only=True)
+    items = BidItemSerializer(many=True, read_only=True)
+    savings_vs_budget = serializers.SerializerMethodField()
+    rank = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Bid
+        fields = [
+            'id', 'vendor_name', 'vendor_rating', 'total_amount',
+            'delivery_days', 'validity_days', 'notes', 'status',
+            'items', 'savings_vs_budget', 'rank', 'submitted_at'
+        ]
+
+    def get_savings_vs_budget(self, obj):
+        budget = obj.rfq.purchase_request.estimated_budget
+        saving = budget - obj.total_amount
+        return {
+            "amount": str(saving),
+            "percentage": str(round((saving / budget) * 100, 2)) if budget > 0 else "0"
+        }
+
+    def get_rank(self, obj):
+        # Rank by lowest total_amount among all bids for same RFQ
+        bids = obj.rfq.bids.order_by('total_amount')
+        for idx, bid in enumerate(bids, start=1):
+            if bid.id == obj.id:
+                return idx
+        return None            
