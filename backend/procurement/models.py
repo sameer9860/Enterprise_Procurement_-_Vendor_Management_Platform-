@@ -182,4 +182,44 @@ class RFQItem(models.Model):
     estimated_unit_price = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
-        return f"{self.rfq.rfq_number} - {self.item_name}"        
+        return f"{self.rfq.rfq_number} - {self.item_name}"    
+
+class Bid(models.Model):
+    class Status(models.TextChoices):
+        SUBMITTED = 'SUBMITTED', 'Submitted'
+        UNDER_REVIEW = 'UNDER_REVIEW', 'Under Review'
+        SHORTLISTED = 'SHORTLISTED', 'Shortlisted'
+        REJECTED = 'REJECTED', 'Rejected'
+        AWARDED = 'AWARDED', 'Awarded'
+
+    rfq = models.ForeignKey(RFQ, on_delete=models.CASCADE, related_name='bids')
+    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name='bids')
+    total_amount = models.DecimalField(max_digits=14, decimal_places=2)
+    delivery_days = models.PositiveIntegerField(help_text="Estimated delivery in days")
+    validity_days = models.PositiveIntegerField(help_text="Bid valid for X days", default=30)
+    notes = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.SUBMITTED)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['rfq', 'vendor']
+        ordering = ['total_amount']
+
+    def __str__(self):
+        return f"{self.rfq.rfq_number} - {self.vendor.company_name} - ${self.total_amount}"
+
+
+class BidItem(models.Model):
+    bid = models.ForeignKey(Bid, on_delete=models.CASCADE, related_name='items')
+    rfq_item = models.ForeignKey(RFQItem, on_delete=models.CASCADE, related_name='bid_items')
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    quantity = models.PositiveIntegerField()
+    total_price = models.DecimalField(max_digits=12, decimal_places=2)
+
+    def save(self, *args, **kwargs):
+        self.total_price = self.unit_price * self.quantity
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.bid} - {self.rfq_item.item_name}"            
