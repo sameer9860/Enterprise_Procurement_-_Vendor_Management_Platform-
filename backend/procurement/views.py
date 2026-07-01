@@ -25,6 +25,11 @@ from accounts.permissions import IsVendor, IsProcurement, IsAdmin
 from .models import RFQ, RFQItem
 from .serializers import RFQSerializer, RFQListSerializer, RFQCreateSerializer
 
+from .models import Bid, BidItem
+from .serializers import BidSerializer, BidListSerializer, BidComparisonSerializer
+from django.db.models import Min, Max, Avg, Count
+from rest_framework import serializers as drf_serializers
+
 
 class PurchaseRequestViewSet(viewsets.ModelViewSet):
     queryset = PurchaseRequest.objects.select_related('requester', 'department').prefetch_related('items')
@@ -327,4 +332,119 @@ class RFQViewSet(viewsets.ModelViewSet):
         rfq.status = 'CLOSED'
         rfq.save()
         log_action(request.user, 'CLOSE_RFQ', rfq, request=request)
-        return Response({"message": "RFQ closed. No more bids will be accepted.", "rfq_number": rfq.rfq_number})        
+        return Response({"message": "RFQ closed. No more bids will be accepted.", "rfq_number": rfq.rfq_number})
+
+
+class BidViewSet(viewsets.ModelViewSet):
+    queryset = Bid.objects.select_related('rfq', 'vendor').prefetch_related('items')
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return BidListSerializer
+        return BidSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.role == 'VENDOR':
+            try:
+                return qs.filter(vendor=user.vendor_profile)
+            except Vendor.DoesNotExist:
+                return qs.none()
+        elif user.role in ['PROCUREMENT', 'ADMIN']:
+            return qs
+        elif user.role == 'MANAGER':
+            return qs.filter(rfq__purchase_request__department=user.department)
+        return qs.none()
+
+    def get_permissions(self):
+        if self.action == 'create':
+            return [IsVendor()]
+        if self.action in ['shortlist', 'reject_bid', 'award_bid', 'compare']:
+            return [IsProcurement()]
+        return [permissions.IsAuthenticated()]
+
+    def perform_create(self, serializer):
+        try:
+            vendor = self.request.user.vendor_profile
+        except Vendor.DoesNotExist:
+            raise drf_serializers.ValidationError("You do not have a vendor profile.")
+
+        if vendor.status != 'ACTIVE':
+            raise drf_serializers.ValidationError("Your vendor account is not active.")
+
+        # Check vendor has not already bid on this RFQ
+        rfq = serializer.validated_data['rfq']
+        if Bid.objects.filter(rfq=rfq, vendor=vendor).exists():
+            raise drf_serializers.ValidationError("You have already submitted a bid for this RFQ.")
+
+        instance = serializer.save(vendor=vendor)
+        log_action(self.request.user, 'SUBMIT_BID', instance,
+                   details={"rfq": rfq.rfq_number, "amount": str(instance.total_amount)},
+                   request=self.request)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsProcurement])
+    def compare(self, request):
+        """Bid comparison dashboard for an RFQ."""
+        rfq_id = request.query_params.get('rfq_id')
+        if not rfq_id:
+            return Response({"error": "rfq_id query param is required."}, status=400)
+
+        try:
+            rfq = RFQ.objects.get(id=rfq_id)
+        except RFQ.DoesNotExist:
+            return Response({"error": "RFQ not found."}, status=404)
+
+        bids = (
+            Bid.objects
+            .filter(rfq=rfq)
+            .select_related('vendor')
+            .prefetch_related('items')
+            .order_by('total_amount')
+        )
+
+        if not bids.exists():
+            return Response({"message": "No bids submitted yet.", "rfq": rfq.rfq_number, "bids": []})
+
+        stats = bids.aggregate(
+            lowest_bid=Min('total_amount'),
+            highest_bid=Max('total_amount'),
+            average_bid=Avg('total_amount'),
+            total_bids=Count('id')
+        )
+
+        serialized_bids = BidComparisonSerializer(bids, many=True).data
+
+        return Response({
+            "rfq_number": rfq.rfq_number,
+            "rfq_title": rfq.title,
+            "estimated_budget": str(rfq.purchase_request.estimated_budget),
+            "deadline": rfq.deadline,
+            "status": rfq.status,
+            "statistics": {
+                "total_bids": stats['total_bids'],
+                "lowest_bid": str(stats['lowest_bid']),
+                "highest_bid": str(stats['highest_bid']),
+                "average_bid": str(round(stats['average_bid'], 2)),
+            },
+            "bids": serialized_bids
+        })
+
+    @action(detail=True, methods=['post'], permission_classes=[IsProcurement])
+    def shortlist(self, request, pk=None):
+        bid = self.get_object()
+        bid.status = 'SHORTLISTED'
+        bid.save()
+        log_action(request.user, 'SHORTLIST_BID', bid, request=request)
+        return Response({"message": f"Bid from {bid.vendor.company_name} shortlisted."})
+
+    @action(detail=True, methods=['post'], permission_classes=[IsProcurement])
+    def reject_bid(self, request, pk=None):
+        bid = self.get_object()
+        if bid.status == 'AWARDED':
+            return Response({"error": "Cannot reject an awarded bid."}, status=400)
+        bid.status = 'REJECTED'
+        bid.save()
+        log_action(request.user, 'REJECT_BID', bid, request=request)
+        return Response({"message": f"Bid from {bid.vendor.company_name} rejected."})
