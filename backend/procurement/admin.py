@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import PurchaseRequest,RequestItem,Approval,RFQ,RFQItem
+from .models import PurchaseRequest,RequestItem,Approval,RFQ,RFQItem,Vendor,VendorCategory,VendorDocument,Bid,BidItem
 
 
 class PurchaseRequestAdmin(admin.ModelAdmin):
@@ -33,4 +33,14 @@ admin.site.register(Approval,ApprovalAdmin)
 admin.site.register(RFQ)
 
 admin.site.register(RFQItem)
+
+admin.site.register(Vendor)
+
+admin.site.register(VendorCategory)
+
+admin.site.register(VendorDocument)
+
+admin.site.register(Bid)
+
+admin.site.register(BidItem)
 
