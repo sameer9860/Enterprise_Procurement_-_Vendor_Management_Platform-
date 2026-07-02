@@ -13,6 +13,7 @@ from audit.utils import log_action
 
 from django.utils import timezone
 from django.db.models import Q
+from django.db import transaction
 
 from .models import Vendor, VendorCategory
 
@@ -334,6 +335,16 @@ class RFQViewSet(viewsets.ModelViewSet):
         log_action(request.user, 'CLOSE_RFQ', rfq, request=request)
         return Response({"message": "RFQ closed. No more bids will be accepted.", "rfq_number": rfq.rfq_number})
 
+    @action(detail=True, methods=['get'])
+    def awarded_bid(self, request, pk=None):
+        """Return the awarded bid for this RFQ, if any."""
+        rfq = self.get_object()
+        try:
+            bid = rfq.bids.get(status='AWARDED')
+            return Response(BidComparisonSerializer(bid).data)
+        except Bid.DoesNotExist:
+            return Response({"message": "No bid has been awarded yet for this RFQ."})
+
 
 class BidViewSet(viewsets.ModelViewSet):
     queryset = Bid.objects.select_related('rfq', 'vendor').prefetch_related('items')
@@ -448,3 +459,61 @@ class BidViewSet(viewsets.ModelViewSet):
         bid.save()
         log_action(request.user, 'REJECT_BID', bid, request=request)
         return Response({"message": f"Bid from {bid.vendor.company_name} rejected."})
+
+    @action(detail=True, methods=['post'], permission_classes=[IsProcurement])
+    def award_bid(self, request, pk=None):
+        """Award a bid — atomically rejects all others and advances the procurement flow."""
+        bid = self.get_object()
+
+        if bid.rfq.status != 'CLOSED':
+            return Response(
+                {"error": "RFQ must be CLOSED before awarding a bid. Close the RFQ first."},
+                status=400
+            )
+
+        if bid.status not in ['SUBMITTED', 'SHORTLISTED', 'UNDER_REVIEW']:
+            return Response(
+                {"error": f"Cannot award a bid with status '{bid.status}'."},
+                status=400
+            )
+
+        if Bid.objects.filter(rfq=bid.rfq, status='AWARDED').exists():
+            return Response(
+                {"error": "A bid has already been awarded for this RFQ."},
+                status=400
+            )
+
+        with transaction.atomic():
+            # Award this bid
+            bid.status = 'AWARDED'
+            bid.save()
+
+            # Reject all remaining bids for this RFQ
+            Bid.objects.filter(rfq=bid.rfq).exclude(id=bid.id).update(status='REJECTED')
+
+            # Advance RFQ status
+            bid.rfq.status = 'AWARDED'
+            bid.rfq.save()
+
+            # Advance PurchaseRequest status
+            purchase_request = bid.rfq.purchase_request
+            purchase_request.status = PurchaseRequest.Status.VENDOR_SELECTED
+            purchase_request.save()
+
+        log_action(
+            request.user, 'AWARD_BID', bid,
+            details={
+                "vendor": bid.vendor.company_name,
+                "amount": str(bid.total_amount),
+                "rfq": bid.rfq.rfq_number,
+            },
+            request=request,
+        )
+
+        return Response({
+            "message": f"Bid awarded to {bid.vendor.company_name}.",
+            "bid_id": bid.id,
+            "vendor": bid.vendor.company_name,
+            "awarded_amount": str(bid.total_amount),
+            "purchase_request_status": purchase_request.status,
+        })
