@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db import transaction
-from .models import PurchaseRequest, RequestItem, Approval, VendorCategory, Vendor, VendorDocument, RFQ, RFQItem,Bid,BidItem
+from .models import PurchaseRequest,PurchaseOrder,POItem, RequestItem, Approval, VendorCategory, Vendor, VendorDocument, RFQ, RFQItem,Bid,BidItem
 
 
 class RequestItemSerializer(serializers.ModelSerializer):
@@ -75,6 +75,66 @@ class ApprovalActionSerializer(serializers.Serializer):
     action = serializers.ChoiceField(choices=['APPROVED', 'REJECTED', 'CHANGES_REQUESTED'])
     comments = serializers.CharField(required=False, allow_blank=True)
 
+class POItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = POItem
+        fields = [
+            'id', 'item_name', 'quantity',
+            'unit_price', 'total_price', 'specifications'
+        ]
+        read_only_fields = ['total_price']
+
+
+class PurchaseOrderSerializer(serializers.ModelSerializer):
+    items = POItemSerializer(many=True, read_only=True)
+    vendor_name = serializers.CharField(source='vendor.company_name', read_only=True)
+    vendor_address = serializers.CharField(source='vendor.address', read_only=True)
+    created_by_name = serializers.CharField(source='created_by.username', read_only=True)
+    purchase_request_title = serializers.CharField(source='purchase_request.title', read_only=True)
+
+    class Meta:
+        model = PurchaseOrder
+        fields = [
+            'id', 'po_number', 'purchase_request', 'purchase_request_title',
+            'awarded_bid', 'vendor', 'vendor_name', 'vendor_address',
+            'status', 'delivery_address', 'expected_delivery_date',
+            'special_instructions', 'total_amount', 'pdf_url',
+            'created_by', 'created_by_name',
+            'sent_at', 'acknowledged_at',
+            'items', 'created_at', 'updated_at'
+        ]
+        read_only_fields = [
+            'po_number', 'vendor', 'total_amount', 'pdf_url',
+            'created_by', 'sent_at', 'acknowledged_at',
+            'created_at', 'updated_at'
+        ]
+
+
+class PurchaseOrderListSerializer(serializers.ModelSerializer):
+    vendor_name = serializers.CharField(source='vendor.company_name', read_only=True)
+    purchase_request_title = serializers.CharField(source='purchase_request.title', read_only=True)
+
+    class Meta:
+        model = PurchaseOrder
+        fields = [
+            'id', 'po_number', 'vendor_name', 'purchase_request_title',
+            'total_amount', 'status', 'expected_delivery_date', 'created_at'
+        ]
+
+
+class POCreateSerializer(serializers.Serializer):
+    """Used to generate PO from awarded bid"""
+    bid_id = serializers.IntegerField()
+    delivery_address = serializers.CharField()
+    expected_delivery_date = serializers.DateField()
+    special_instructions = serializers.CharField(required=False, allow_blank=True)
+
+
+class POStatusUpdateSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=[
+        'SENT', 'ACKNOWLEDGED', 'IN_PROGRESS', 'DELIVERED', 'CANCELLED'
+    ])
+    notes = serializers.CharField(required=False, allow_blank=True)
 
 class VendorCategorySerializer(serializers.ModelSerializer):
     class Meta:
