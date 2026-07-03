@@ -34,6 +34,84 @@ class PurchaseRequest(models.Model):
     def __str__(self):
         return f"REQ-{self.id} - {self.title}"
 
+class PurchaseOrder(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = 'DRAFT', 'Draft'
+        SENT = 'SENT', 'Sent to Vendor'
+        ACKNOWLEDGED = 'ACKNOWLEDGED', 'Acknowledged by Vendor'
+        IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
+        DELIVERED = 'DELIVERED', 'Delivered'
+        CANCELLED = 'CANCELLED', 'Cancelled'
+
+    po_number = models.CharField(max_length=50, unique=True)
+    purchase_request = models.OneToOneField(
+        PurchaseRequest,
+        on_delete=models.CASCADE,
+        related_name='purchase_order'
+    )
+    awarded_bid = models.OneToOneField(
+        'Bid',
+        on_delete=models.CASCADE,
+        related_name='purchase_order'
+    )
+    vendor = models.ForeignKey(
+        'Vendor',
+        on_delete=models.CASCADE,
+        related_name='purchase_orders'
+    )
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    delivery_address = models.TextField()
+    expected_delivery_date = models.DateField()
+    special_instructions = models.TextField(blank=True)
+    total_amount = models.DecimalField(max_digits=14, decimal_places=2)
+    pdf_url = models.URLField(blank=True)  # S3 URL — Day 23
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='created_pos'
+    )
+    sent_at = models.DateTimeField(null=True, blank=True)
+    acknowledged_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['vendor', 'status']),
+        ]
+
+    def __str__(self):
+        return f"{self.po_number} - {self.vendor.company_name}"
+
+    @classmethod
+    def generate_po_number(cls):
+        year = timezone.now().year
+        count = cls.objects.filter(created_at__year=year).count() + 1
+        return f"PO-{year}-{str(count).zfill(5)}"
+
+
+class POItem(models.Model):
+    purchase_order = models.ForeignKey(
+        PurchaseOrder,
+        on_delete=models.CASCADE,
+        related_name='items'
+    )
+    item_name = models.CharField(max_length=255)
+    quantity = models.PositiveIntegerField()
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    total_price = models.DecimalField(max_digits=12, decimal_places=2)
+    specifications = models.TextField(blank=True)
+
+    def save(self, *args, **kwargs):
+        self.total_price = self.unit_price * self.quantity
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.purchase_order.po_number} - {self.item_name}"        
+
 
 class RequestItem(models.Model):
     request = models.ForeignKey(PurchaseRequest, on_delete=models.CASCADE, related_name='items')
