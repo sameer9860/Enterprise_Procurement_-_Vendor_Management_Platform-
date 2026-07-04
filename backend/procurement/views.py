@@ -30,6 +30,12 @@ from .models import Bid, BidItem
 from .serializers import BidSerializer, BidListSerializer, BidComparisonSerializer
 from django.db.models import Min, Max, Avg, Count
 from rest_framework import serializers as drf_serializers
+from .models import PurchaseOrder, POItem
+from .serializers import (
+    PurchaseOrderSerializer, PurchaseOrderListSerializer,
+    POCreateSerializer, POStatusUpdateSerializer
+)
+
 
 
 class PurchaseRequestViewSet(viewsets.ModelViewSet):
@@ -517,3 +523,176 @@ class BidViewSet(viewsets.ModelViewSet):
             "awarded_amount": str(bid.total_amount),
             "purchase_request_status": purchase_request.status,
         })
+
+
+class PurchaseOrderViewSet(viewsets.ModelViewSet):
+    queryset = PurchaseOrder.objects.select_related(
+        'purchase_request', 'vendor', 'awarded_bid', 'created_by'
+    ).prefetch_related('items')
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return PurchaseOrderListSerializer
+        return PurchaseOrderSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.role == 'VENDOR':
+            try:
+                return qs.filter(vendor=user.vendor_profile)
+            except Vendor.DoesNotExist:
+                return qs.none()
+        elif user.role == 'MANAGER':
+            return qs.filter(purchase_request__department=user.department)
+        elif user.role in ['PROCUREMENT', 'FINANCE', 'ADMIN']:
+            return qs
+        return qs.none()
+
+    def get_permissions(self):
+        if self.action in ['generate_po', 'update_status', 'send_to_vendor']:
+            return [IsProcurement()]
+        if self.action == 'acknowledge':
+            return [IsVendor()]
+        return [permissions.IsAuthenticated()]
+
+    @action(detail=False, methods=['post'], permission_classes=[IsProcurement])
+    def generate_po(self, request):
+        serializer = POCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        bid_id = serializer.validated_data['bid_id']
+
+        try:
+            bid = Bid.objects.select_related(
+                'rfq__purchase_request', 'vendor'
+            ).get(id=bid_id)
+        except Bid.DoesNotExist:
+            return Response({"error": "Bid not found."}, status=404)
+
+        if bid.status != 'AWARDED':
+            return Response({"error": "Only awarded bids can be converted to a PO."}, status=400)
+
+        if hasattr(bid, 'purchase_order'):
+            return Response({"error": "A PO has already been generated for this bid."}, status=400)
+
+        with transaction.atomic():
+            po = PurchaseOrder.objects.create(
+                po_number=PurchaseOrder.generate_po_number(),
+                purchase_request=bid.rfq.purchase_request,
+                awarded_bid=bid,
+                vendor=bid.vendor,
+                delivery_address=serializer.validated_data['delivery_address'],
+                expected_delivery_date=serializer.validated_data['expected_delivery_date'],
+                special_instructions=serializer.validated_data.get('special_instructions', ''),
+                total_amount=bid.total_amount,
+                created_by=request.user
+            )
+
+            # Copy items from awarded bid
+            for bid_item in bid.items.all():
+                POItem.objects.create(
+                    purchase_order=po,
+                    item_name=bid_item.rfq_item.item_name,
+                    quantity=bid_item.quantity,
+                    unit_price=bid_item.unit_price,
+                    specifications=bid_item.rfq_item.specifications
+                )
+
+            # Update PurchaseRequest status
+            bid.rfq.purchase_request.status = PurchaseRequest.Status.PO_GENERATED
+            bid.rfq.purchase_request.save()
+
+        log_action(request.user, 'GENERATE_PO', po,
+                    details={"po_number": po.po_number, "vendor": po.vendor.company_name},
+                    request=request)
+
+        return Response(PurchaseOrderSerializer(po).data, status=201)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsProcurement])
+    def send_to_vendor(self, request, pk=None):
+        po = self.get_object()
+
+        if po.status != 'DRAFT':
+            return Response({"error": "Only DRAFT POs can be sent."}, status=400)
+
+        po.status = 'SENT'
+        po.sent_at = timezone.now()
+        po.save()
+
+        log_action(request.user, 'SEND_PO', po,
+                    details={"po_number": po.po_number},
+                    request=request)
+
+        return Response({
+            "message": f"PO {po.po_number} sent to {po.vendor.company_name}.",
+            "sent_at": po.sent_at
+        })
+
+    @action(detail=True, methods=['post'], permission_classes=[IsVendor])
+    def acknowledge(self, request, pk=None):
+        po = self.get_object()
+
+        try:
+            vendor = request.user.vendor_profile
+        except Vendor.DoesNotExist:
+            return Response({"error": "Vendor profile not found."}, status=403)
+
+        if po.vendor != vendor:
+            return Response({"error": "This PO does not belong to your vendor account."}, status=403)
+
+        if po.status != 'SENT':
+            return Response({"error": "Only SENT POs can be acknowledged."}, status=400)
+
+        po.status = 'ACKNOWLEDGED'
+        po.acknowledged_at = timezone.now()
+        po.save()
+
+        log_action(request.user, 'ACKNOWLEDGE_PO', po,
+                    details={"po_number": po.po_number},
+                    request=request)
+
+        return Response({
+            "message": f"PO {po.po_number} acknowledged successfully.",
+            "acknowledged_at": po.acknowledged_at
+        })
+
+    @action(detail=True, methods=['post'], permission_classes=[IsProcurement])
+    def update_status(self, request, pk=None):
+        po = self.get_object()
+        serializer = POStatusUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        new_status = serializer.validated_data['status']
+
+        # Status transition validation
+        valid_transitions = {
+            'DRAFT': ['SENT', 'CANCELLED'],
+            'SENT': ['ACKNOWLEDGED', 'CANCELLED'],
+            'ACKNOWLEDGED': ['IN_PROGRESS', 'CANCELLED'],
+            'IN_PROGRESS': ['DELIVERED', 'CANCELLED'],
+            'DELIVERED': [],
+            'CANCELLED': [],
+        }
+
+        if new_status not in valid_transitions.get(po.status, []):
+            return Response(
+                {"error": f"Cannot transition from '{po.status}' to '{new_status}'. "
+                          f"Allowed: {valid_transitions.get(po.status, [])}"},
+                status=400
+            )
+
+        po.status = new_status
+        po.save()
+
+        log_action(request.user, f'PO_STATUS_{new_status}', po,
+                    details={"notes": serializer.validated_data.get('notes', '')},
+                    request=request)
+
+        return Response({
+            "message": f"PO status updated to {new_status}.",
+            "po_number": po.po_number,
+            "status": po.status
+        })
+
