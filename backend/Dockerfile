@@ -1,5 +1,4 @@
 FROM python:3.11-slim
-
 # System dependencies for WeasyPrint
 RUN apt-get update && apt-get install -y \
     libpango-1.0-0 \

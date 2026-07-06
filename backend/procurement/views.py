@@ -10,7 +10,8 @@ from .pagination import StandardResultsPagination
 from accounts.mixins import RoleRequiredMixin
 from accounts.permissions import IsManagerOrAdmin
 from audit.utils import log_action
-
+from django.http import HttpResponse
+from .pdf_utils import generate_po_pdf, save_po_pdf_locally
 from django.utils import timezone
 from django.db.models import Q
 from django.db import transaction
@@ -153,7 +154,8 @@ class PurchaseRequestViewSet(viewsets.ModelViewSet):
         purchase_request = self.get_object()
         approvals = purchase_request.approvals.all()
         serializer = ApprovalSerializer(approvals, many=True)
-        return Response(serializer.data)        
+        return Response(serializer.data)
+    
 
 class VendorViewSet(viewsets.ModelViewSet):
     queryset = Vendor.objects.select_related('user').prefetch_related('categories', 'documents')
@@ -609,6 +611,45 @@ class PurchaseOrderViewSet(viewsets.ModelViewSet):
                     request=request)
 
         return Response(PurchaseOrderSerializer(po).data, status=201)
+
+    @action(detail=True, methods=['get'])
+    def download_pdf(self, request, pk=None):
+        po = self.get_object()
+
+        allowed_roles = ['PROCUREMENT', 'ADMIN', 'FINANCE', 'MANAGER']
+        if request.user.role == 'VENDOR' and po.vendor != getattr(request.user, 'vendor_profile', None):
+            return Response({"error": "Access denied."}, status=403)
+
+        if request.user.role not in allowed_roles and request.user.role != 'VENDOR':
+            return Response({"error": "Access denied."}, status=403)
+
+        pdf_bytes = generate_po_pdf(
+            po,
+            company_name="Procurement Platform Inc.",
+            company_address="123 Business Park, Kathmandu, Nepal"
+        )
+
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{po.po_number}.pdf"'
+        return response
+
+    @action(detail=True, methods=['post'], permission_classes=[IsProcurement])
+    def generate_pdf_and_save(self, request, pk=None):
+        po = self.get_object()
+        file_path = save_po_pdf_locally(po)
+
+        po.pdf_url = file_path
+        po.save()
+
+        log_action(request.user, 'GENERATE_PDF', po,
+                    details={"file_path": file_path},
+                    request=request)
+
+        return Response({
+            "message": "PDF generated successfully.",
+            "po_number": po.po_number,
+            "file_path": file_path
+        })
 
     @action(detail=True, methods=['post'], permission_classes=[IsProcurement])
     def send_to_vendor(self, request, pk=None):
