@@ -13,7 +13,7 @@ MarkupSafe==3.0.3
 pillow==12.3.0
 psycopg2-binary==2.9.9
 pycparser==3.0
-pydyf==0.12.1
+pydyf<0.12
 PyJWT==2.13.0
 pyphen==0.17.2
 python-decouple==3.8

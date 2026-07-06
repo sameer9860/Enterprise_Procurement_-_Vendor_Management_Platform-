@@ -16,6 +16,7 @@ from .models import (
     Vendor, VendorCategory,
     RFQ, RFQItem,
     Bid, BidItem,
+    PurchaseOrder, POItem,
 )
 
 
@@ -161,6 +162,59 @@ class ProcurementBaseTest(TestCase):
 # ===========================================================================
 # 1. RFQ Creation Tests
 # ===========================================================================
+
+class PurchaseOrderPdfTest(ProcurementBaseTest):
+
+    def test_procurement_can_generate_po_pdf_and_save(self):
+        request_id = self.create_approved_pr()
+        rfq_id, rfq_item_id = self.create_rfq(request_id)
+
+        self.auth("vendor1")
+        bid_resp = self.client.post(
+            "/api/procurement/bids/",
+            {
+                "rfq": rfq_id,
+                "total_amount": 50000,
+                "delivery_days": 10,
+                "validity_days": 30,
+                "notes": "Best offer",
+                "items": [{"rfq_item": rfq_item_id, "unit_price": 1000, "quantity": 50}],
+            },
+            format="json",
+        )
+        self.assertEqual(bid_resp.status_code, 201, bid_resp.data)
+
+        self.auth("proc1")
+        close_resp = self.client.post(f"/api/procurement/rfqs/{rfq_id}/close_rfq/")
+        self.assertEqual(close_resp.status_code, 200, close_resp.data)
+
+        resp = self.client.post(
+            "/api/procurement/bids/" + str(bid_resp.data["id"]) + "/award_bid/",
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 200, resp.data)
+
+        po_resp = self.client.post(
+            "/api/procurement/purchase-orders/generate_po/",
+            {
+                "bid_id": bid_resp.data["id"],
+                "delivery_address": "123 Main Street",
+                "expected_delivery_date": "2026-08-15",
+                "special_instructions": "Handle with care",
+            },
+            format="json",
+        )
+        self.assertEqual(po_resp.status_code, 201, po_resp.data)
+
+        po_id = po_resp.data["id"]
+        pdf_resp = self.client.get(f"/api/procurement/purchase-orders/{po_id}/download_pdf/")
+        self.assertEqual(pdf_resp.status_code, 200)
+        self.assertEqual(pdf_resp["Content-Type"], "application/pdf")
+
+        save_resp = self.client.post(f"/api/procurement/purchase-orders/{po_id}/generate_pdf_and_save/")
+        self.assertEqual(save_resp.status_code, 200, save_resp.data)
+        self.assertTrue(PurchaseOrder.objects.get(id=po_id).pdf_url.endswith(".pdf"))
+
 
 class RFQCreationTest(ProcurementBaseTest):
 
