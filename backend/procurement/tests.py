@@ -7,7 +7,9 @@ dashboard, shortlisting, rejection, RFQ close, vendor selection
 Run with:
     docker-compose exec web python manage.py test procurement
 """
-from django.test import TestCase
+from unittest.mock import patch
+
+from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from accounts.models import User, Department
@@ -214,6 +216,67 @@ class PurchaseOrderPdfTest(ProcurementBaseTest):
         save_resp = self.client.post(f"/api/procurement/purchase-orders/{po_id}/generate_pdf_and_save/")
         self.assertEqual(save_resp.status_code, 200, save_resp.data)
         self.assertTrue(PurchaseOrder.objects.get(id=po_id).pdf_url.endswith(".pdf"))
+
+
+class PurchaseOrderSupabaseTest(ProcurementBaseTest):
+
+    @override_settings(
+        USE_SUPABASE=True,
+        SUPABASE_URL="https://example.supabase.co",
+        SUPABASE_KEY="service-role-key",
+        SUPABASE_STORAGE_BUCKET="procurement-docs",
+    )
+    @patch("procurement.pdf_utils.upload_pdf_to_supabase", return_value="po_pdfs/PO-2026-00001.pdf")
+    def test_generate_pdf_and_save_uses_supabase_when_enabled(self, mock_upload):
+        request_id = self.create_approved_pr()
+        rfq_id, rfq_item_id = self.create_rfq(request_id)
+
+        self.auth("vendor1")
+        bid_resp = self.client.post(
+            "/api/procurement/bids/",
+            {
+                "rfq": rfq_id,
+                "total_amount": 50000,
+                "delivery_days": 10,
+                "validity_days": 30,
+                "notes": "Best offer",
+                "items": [{"rfq_item": rfq_item_id, "unit_price": 1000, "quantity": 50}],
+            },
+            format="json",
+        )
+        self.assertEqual(bid_resp.status_code, 201, bid_resp.data)
+
+        self.auth("proc1")
+        close_resp = self.client.post(f"/api/procurement/rfqs/{rfq_id}/close_rfq/")
+        self.assertEqual(close_resp.status_code, 200, close_resp.data)
+
+        award_resp = self.client.post(
+            "/api/procurement/bids/" + str(bid_resp.data["id"]) + "/award_bid/",
+            format="json",
+        )
+        self.assertEqual(award_resp.status_code, 200, award_resp.data)
+
+        po_resp = self.client.post(
+            "/api/procurement/purchase-orders/generate_po/",
+            {
+                "bid_id": bid_resp.data["id"],
+                "delivery_address": "123 Main Street",
+                "expected_delivery_date": "2026-08-15",
+                "special_instructions": "Handle with care",
+            },
+            format="json",
+        )
+        self.assertEqual(po_resp.status_code, 201, po_resp.data)
+
+        save_resp = self.client.post(
+            f"/api/procurement/purchase-orders/{po_resp.data['id']}/generate_pdf_and_save/"
+        )
+        self.assertEqual(save_resp.status_code, 200, save_resp.data)
+        self.assertEqual(
+            PurchaseOrder.objects.get(id=po_resp.data["id"]).pdf_url,
+            "po_pdfs/PO-2026-00001.pdf",
+        )
+        mock_upload.assert_called_once()
 
 
 class RFQCreationTest(ProcurementBaseTest):
