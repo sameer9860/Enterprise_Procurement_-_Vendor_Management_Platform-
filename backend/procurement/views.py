@@ -12,11 +12,12 @@ from accounts.permissions import IsManagerOrAdmin
 from audit.utils import log_action
 from django.http import HttpResponse
 from .pdf_utils import generate_po_pdf, save_po_pdf_locally
+from .supabase_utils import upload_vendor_document_to_supabase
 from django.utils import timezone
 from django.db.models import Q
 from django.db import transaction
 
-from .models import Vendor, VendorCategory
+from .models import Vendor, VendorCategory, VendorDocument
 
 from .serializers import (
     VendorSerializer, VendorListSerializer,
@@ -221,6 +222,38 @@ class VendorViewSet(viewsets.ModelViewSet):
         vendors = Vendor.objects.filter(status='ACTIVE').select_related('user').prefetch_related('categories')
         serializer = VendorListSerializer(vendors, many=True)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def upload_document(self, request, pk=None):
+        vendor = self.get_object()
+
+        if request.user.role == 'VENDOR' and vendor.user != request.user:
+            return Response({"error": "Access denied."}, status=403)
+
+        if request.user.role not in ['VENDOR', 'PROCUREMENT', 'ADMIN', 'MANAGER', 'FINANCE']:
+            return Response({"error": "Access denied."}, status=403)
+
+        document_type = request.data.get('document_type')
+        file_obj = request.FILES.get('file')
+
+        if not document_type or not file_obj:
+            return Response({"error": "document_type and file are required."}, status=400)
+
+        storage_path = upload_vendor_document_to_supabase(file_obj, vendor.id, document_type)
+        if not storage_path:
+            return Response({"error": "Unable to upload document. Check storage configuration."}, status=400)
+
+        document = VendorDocument.objects.create(
+            vendor=vendor,
+            document_type=document_type,
+            file_name=file_obj.name,
+            file_url=storage_path,
+        )
+
+        return Response(
+            VendorDocumentSerializer(document).data,
+            status=201,
+        )
 
 
 class VendorCategoryViewSet(viewsets.ModelViewSet):

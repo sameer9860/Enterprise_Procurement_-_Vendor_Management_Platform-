@@ -1,7 +1,8 @@
 from django.template.loader import render_to_string
 from weasyprint import HTML
-import tempfile
 import os
+
+from .supabase_utils import upload_pdf_to_supabase
 
 def generate_po_pdf(po, company_name="Your Company", company_address="Your Address"):
     """Generate PDF bytes for a PurchaseOrder"""
@@ -16,8 +17,19 @@ def generate_po_pdf(po, company_name="Your Company", company_address="Your Addre
 
 
 def save_po_pdf_locally(po):
-    """Save PDF to local media folder (used before S3 on Day 23)"""
+    """Save PDF to local media folder or Supabase Storage when configured."""
     pdf_bytes = generate_po_pdf(po)
+
+    try:
+        from django.conf import settings
+    except ImportError:
+        settings = None
+
+    if settings and getattr(settings, 'USE_SUPABASE', False):
+        file_path = upload_pdf_to_supabase(pdf_bytes, f"{po.po_number}.pdf", folder='po_pdfs')
+        if file_path:
+            return file_path
+
     media_dir = 'media/po_pdfs'
     os.makedirs(media_dir, exist_ok=True)
     file_path = f"{media_dir}/{po.po_number}.pdf"
