@@ -161,7 +161,7 @@ SIMPLE_JWT = {
 }
 
 # Supabase storage configuration (placeholder values can be filled later)
-SUPABASE_URL = config('SUPABASE_URL', default='')
-SUPABASE_KEY = config('SUPABASE_KEY', default='')
-SUPABASE_STORAGE_BUCKET = config('SUPABASE_STORAGE_BUCKET', default='procurement-docs')
+SUPABASE_URL = config('SUPABASE_URL')
+SUPABASE_KEY = config('SUPABASE_KEY')
+SUPABASE_STORAGE_BUCKET = config('SUPABASE_STORAGE_BUCKET')
 USE_SUPABASE = bool(SUPABASE_URL and SUPABASE_KEY)

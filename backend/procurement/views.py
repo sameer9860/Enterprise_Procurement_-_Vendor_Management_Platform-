@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import PurchaseRequest, Approval
-from .serializers import PurchaseRequestSerializer, PurchaseRequestListSerializer, ApprovalSerializer, ApprovalActionSerializer
+from .serializers import PurchaseRequestSerializer, PurchaseRequestListSerializer, ApprovalSerializer, ApprovalActionSerializer,VendorDocumentSerializer
 from .filters import PurchaseRequestFilter
 from .pagination import StandardResultsPagination
 from accounts.mixins import RoleRequiredMixin
@@ -12,7 +12,7 @@ from accounts.permissions import IsManagerOrAdmin
 from audit.utils import log_action
 from django.http import HttpResponse
 from .pdf_utils import generate_po_pdf, save_po_pdf_locally
-from .supabase_utils import upload_vendor_document_to_supabase
+from .supabase_utils import upload_vendor_document_to_supabase, get_supabase_signed_url
 from django.utils import timezone
 from django.db.models import Q
 from django.db import transaction
@@ -679,10 +679,41 @@ class PurchaseOrderViewSet(viewsets.ModelViewSet):
                     request=request)
 
         return Response({
-            "message": "PDF generated successfully.",
+            "message": "PDF generated and stored successfully.",
             "po_number": po.po_number,
-            "file_path": file_path
+            "pdf_ref": file_path
         })
+
+    @action(detail=True, methods=['get'], permission_classes=[IsProcurement])
+    def get_pdf_url(self, request, pk=None):
+        po = self.get_object()
+
+        if not po.pdf_url:
+            return Response(
+                {"error": "No PDF has been generated for this PO yet. Call generate_pdf_and_save first."},
+                status=400
+            )
+
+        from django.conf import settings
+        if getattr(settings, 'USE_SUPABASE', False):
+            signed_url = get_supabase_signed_url(po.pdf_url, expiry_seconds=3600)
+            if not signed_url:
+                return Response(
+                    {"error": "Failed to generate a signed URL. Check your Supabase configuration."},
+                    status=500
+                )
+            return Response({
+                "po_number": po.po_number,
+                "download_url": signed_url,
+                "expires_in": "1 hour"
+            })
+        else:
+            # Local fallback — return the local file path
+            return Response({
+                "po_number": po.po_number,
+                "download_url": request.build_absolute_uri(f"/media/{po.pdf_url.lstrip('media/')}"),
+                "expires_in": "N/A (local storage)"
+            })
 
     @action(detail=True, methods=['post'], permission_classes=[IsProcurement])
     def send_to_vendor(self, request, pk=None):
