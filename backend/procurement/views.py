@@ -1,11 +1,12 @@
 from rest_framework import viewsets, permissions, filters, status
+from rest_framework import filters as drf_filters
 from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import PurchaseRequest, Approval
 from .serializers import PurchaseRequestSerializer, PurchaseRequestListSerializer, ApprovalSerializer, ApprovalActionSerializer,VendorDocumentSerializer
-from .filters import PurchaseRequestFilter
+from .filters import PurchaseRequestFilter, PurchaseOrderFilter
 from .pagination import StandardResultsPagination
 from accounts.mixins import RoleRequiredMixin
 from accounts.permissions import IsManagerOrAdmin
@@ -565,6 +566,12 @@ class PurchaseOrderViewSet(viewsets.ModelViewSet):
         'purchase_request', 'vendor', 'awarded_bid', 'created_by'
     ).prefetch_related('items')
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, drf_filters.SearchFilter, drf_filters.OrderingFilter]
+    filterset_class = PurchaseOrderFilter
+    search_fields = ['po_number', 'vendor__company_name', 'purchase_request__title']
+    ordering_fields = ['created_at', 'total_amount', 'expected_delivery_date']
+    ordering = ['-created_at']
+    pagination_class = StandardResultsPagination
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -801,3 +808,61 @@ class PurchaseOrderViewSet(viewsets.ModelViewSet):
             "status": po.status
         })
 
+    @action(detail=True, methods=['get'])
+    def timeline(self, request, pk=None):
+        """Full status timeline for a PO from creation to delivery."""
+        po = self.get_object()
+
+        from audit.models import AuditLog
+        logs = AuditLog.objects.filter(
+            model_name='PurchaseOrder',
+            object_id=po.id
+        ).select_related('user').order_by('timestamp')
+
+        timeline = []
+        for log in logs:
+            timeline.append({
+                "action": log.action,
+                "performed_by": log.user.username if log.user else "System",
+                "role": log.user.role if log.user else "N/A",
+                "details": log.details,
+                "timestamp": log.timestamp,
+            })
+
+        return Response({
+            "po_number": po.po_number,
+            "current_status": po.status,
+            "vendor": po.vendor.company_name,
+            "total_amount": str(po.total_amount),
+            "expected_delivery": po.expected_delivery_date,
+            "timeline": timeline
+        })
+
+    @action(detail=False, methods=['get'], permission_classes=[IsProcurement])
+    def summary(self, request):
+        """Aggregated summary statistics for all Purchase Orders."""
+        from django.db.models import Sum, Count, Q
+
+        stats = PurchaseOrder.objects.aggregate(
+            total_pos=Count('id'),
+            total_value=Sum('total_amount'),
+            draft_count=Count('id', filter=Q(status='DRAFT')),
+            sent_count=Count('id', filter=Q(status='SENT')),
+            acknowledged_count=Count('id', filter=Q(status='ACKNOWLEDGED')),
+            in_progress_count=Count('id', filter=Q(status='IN_PROGRESS')),
+            delivered_count=Count('id', filter=Q(status='DELIVERED')),
+            cancelled_count=Count('id', filter=Q(status='CANCELLED')),
+        )
+
+        return Response({
+            "total_purchase_orders": stats['total_pos'],
+            "total_value": str(stats['total_value'] or 0),
+            "by_status": {
+                "draft": stats['draft_count'],
+                "sent": stats['sent_count'],
+                "acknowledged": stats['acknowledged_count'],
+                "in_progress": stats['in_progress_count'],
+                "delivered": stats['delivered_count'],
+                "cancelled": stats['cancelled_count'],
+            }
+        })
