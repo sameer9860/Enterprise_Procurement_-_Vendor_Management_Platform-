@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db import transaction
-from .models import PurchaseRequest,PurchaseOrder,POItem, RequestItem, Approval, VendorCategory, Vendor, VendorDocument, RFQ, RFQItem,Bid,BidItem
+from .models import PurchaseRequest,PurchaseOrder,POItem, RequestItem, Approval, VendorCategory, Vendor, VendorDocument, RFQ, RFQItem,Bid,BidItem,Invoice,InvoiceItem,Payment
 
 
 class RequestItemSerializer(serializers.ModelSerializer):
@@ -315,4 +315,107 @@ class BidComparisonSerializer(serializers.ModelSerializer):
         for idx, bid in enumerate(bids, start=1):
             if bid.id == obj.id:
                 return idx
-        return None            
+        return None
+
+
+class InvoiceItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InvoiceItem
+        fields = ['id', 'description', 'quantity', 'unit_price', 'total_price']
+        read_only_fields = ['total_price']
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    processed_by_name = serializers.CharField(
+        source='processed_by.username',
+        read_only=True
+    )
+
+    class Meta:
+        model = Payment
+        fields = [
+            'id', 'invoice', 'amount_paid', 'payment_method',
+            'payment_reference', 'payment_date', 'notes',
+            'processed_by', 'processed_by_name', 'created_at'
+        ]
+        read_only_fields = ['processed_by', 'created_at']
+
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    items = InvoiceItemSerializer(many=True, read_only=True)
+    vendor_name = serializers.CharField(source='vendor.company_name', read_only=True)
+    po_number = serializers.CharField(source='purchase_order.po_number', read_only=True)
+    reviewed_by_name = serializers.CharField(source='reviewed_by.username', read_only=True)
+    approved_by_name = serializers.CharField(source='approved_by.username', read_only=True)
+    paid_by_name = serializers.CharField(source='paid_by.username', read_only=True)
+    payment = PaymentSerializer(read_only=True)
+
+    class Meta:
+        model = Invoice
+        fields = [
+            'id', 'invoice_number', 'purchase_order', 'po_number',
+            'vendor', 'vendor_name', 'status', 'amount',
+            'invoice_date', 'due_date', 'file_name', 'file_url',
+            'notes', 'rejection_reason',
+            'submitted_at', 'reviewed_at', 'reviewed_by', 'reviewed_by_name',
+            'approved_at', 'approved_by', 'approved_by_name',
+            'paid_at', 'paid_by', 'paid_by_name',
+            'items', 'payment', 'created_at', 'updated_at'
+        ]
+        read_only_fields = [
+            'invoice_number', 'vendor', 'status',
+            'reviewed_at', 'reviewed_by',
+            'approved_at', 'approved_by',
+            'paid_at', 'paid_by',
+            'rejection_reason', 'submitted_at',
+            'created_at', 'updated_at'
+        ]
+
+
+class InvoiceListSerializer(serializers.ModelSerializer):
+    vendor_name = serializers.CharField(source='vendor.company_name', read_only=True)
+    po_number = serializers.CharField(source='purchase_order.po_number', read_only=True)
+
+    class Meta:
+        model = Invoice
+        fields = [
+            'id', 'invoice_number', 'po_number', 'vendor_name',
+            'amount', 'status', 'invoice_date', 'due_date', 'submitted_at'
+        ]
+
+
+class InvoiceSubmitSerializer(serializers.Serializer):
+    """Used by vendor to submit invoice"""
+    purchase_order_id = serializers.IntegerField()
+    amount = serializers.DecimalField(max_digits=14, decimal_places=2)
+    invoice_date = serializers.DateField()
+    due_date = serializers.DateField()
+    notes = serializers.CharField(required=False, allow_blank=True)
+    items = InvoiceItemSerializer(many=True, required=False)
+
+    def validate(self, data):
+        if data['due_date'] <= data['invoice_date']:
+            raise serializers.ValidationError(
+                "Due date must be after invoice date."
+            )
+        return data
+
+
+class InvoiceReviewSerializer(serializers.Serializer):
+    action = serializers.ChoiceField(choices=['APPROVE', 'REJECT', 'UNDER_REVIEW'])
+    rejection_reason = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, data):
+        if data['action'] == 'REJECT' and not data.get('rejection_reason'):
+            raise serializers.ValidationError(
+                "Rejection reason is required when rejecting an invoice."
+            )
+        return data
+
+
+class PaymentCreateSerializer(serializers.Serializer):
+    amount_paid = serializers.DecimalField(max_digits=14, decimal_places=2)
+    payment_method = serializers.ChoiceField(choices=Payment.Method.choices)
+    payment_reference = serializers.CharField(required=False, allow_blank=True)
+    payment_date = serializers.DateField()
+    notes = serializers.CharField(required=False, allow_blank=True)                    
