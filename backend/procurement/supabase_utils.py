@@ -87,3 +87,26 @@ def upload_vendor_document_to_supabase(file_obj, vendor_id, document_type):
     folder = f"vendor_documents/{vendor_id}"
     file_name = f"{document_type.lower()}_{safe_name}"
     return upload_bytes_to_supabase(file_bytes, file_name, folder=folder)
+
+
+
+def upload_invoice_to_supabase(file_obj, vendor_id, invoice_number):
+    """Upload invoice PDF/file to Supabase Storage"""
+    if not settings.USE_SUPABASE:
+        return None
+
+    supabase = get_supabase_client()
+    file_extension = file_obj.name.split('.')[-1]
+    file_path = f"invoices/{vendor_id}/{invoice_number}.{file_extension}"
+
+    try:
+        file_bytes = file_obj.read()
+        supabase.storage.from_(settings.SUPABASE_STORAGE_BUCKET).upload(
+            path=file_path,
+            file=file_bytes,
+            file_options={"content-type": file_obj.content_type}
+        )
+        return file_path
+    except Exception as e:
+        logger.error(f"Invoice upload failed: {e}")
+        raise    
