@@ -300,4 +300,127 @@ class BidItem(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.bid} - {self.rfq_item.item_name}"            
+        return f"{self.bid} - {self.rfq_item.item_name}"
+
+        
+
+class Invoice(models.Model):
+    class Status(models.TextChoices):
+        SUBMITTED = 'SUBMITTED', 'Submitted'
+        UNDER_REVIEW = 'UNDER_REVIEW', 'Under Review'
+        APPROVED = 'APPROVED', 'Approved'
+        REJECTED = 'REJECTED', 'Rejected'
+        PAID = 'PAID', 'Paid'
+
+    invoice_number = models.CharField(max_length=100, unique=True)
+    purchase_order = models.ForeignKey(
+        PurchaseOrder,
+        on_delete=models.CASCADE,
+        related_name='invoices'
+    )
+    vendor = models.ForeignKey(
+        Vendor,
+        on_delete=models.CASCADE,
+        related_name='invoices'
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.SUBMITTED
+    )
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    invoice_date = models.DateField()
+    due_date = models.DateField()
+    file_name = models.CharField(max_length=255, blank=True)
+    file_url = models.URLField(blank=True)   # Supabase path
+    notes = models.TextField(blank=True)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='reviewed_invoices'
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='approved_invoices'
+    )
+    paid_at = models.DateTimeField(null=True, blank=True)
+    paid_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='paid_invoices'
+    )
+    rejection_reason = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-submitted_at']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['vendor', 'status']),
+            models.Index(fields=['purchase_order', 'status']),
+        ]
+
+    def __str__(self):
+        return f"{self.invoice_number} - {self.vendor.company_name} - {self.status}"
+
+    @classmethod
+    def generate_invoice_number(cls):
+        year = timezone.now().year
+        count = cls.objects.filter(submitted_at__year=year).count() + 1
+        return f"INV-{year}-{str(count).zfill(5)}"
+
+
+class InvoiceItem(models.Model):
+    invoice = models.ForeignKey(
+        Invoice,
+        on_delete=models.CASCADE,
+        related_name='items'
+    )
+    description = models.CharField(max_length=255)
+    quantity = models.PositiveIntegerField()
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    total_price = models.DecimalField(max_digits=12, decimal_places=2)
+
+    def save(self, *args, **kwargs):
+        self.total_price = self.unit_price * self.quantity
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.invoice.invoice_number} - {self.description}"
+
+
+class Payment(models.Model):
+    class Method(models.TextChoices):
+        BANK_TRANSFER = 'BANK_TRANSFER', 'Bank Transfer'
+        CHEQUE = 'CHEQUE', 'Cheque'
+        ONLINE = 'ONLINE', 'Online Payment'
+        CASH = 'CASH', 'Cash'
+
+    invoice = models.OneToOneField(
+        Invoice,
+        on_delete=models.CASCADE,
+        related_name='payment'
+    )
+    amount_paid = models.DecimalField(max_digits=14, decimal_places=2)
+    payment_method = models.CharField(max_length=20, choices=Method.choices)
+    payment_reference = models.CharField(max_length=255, blank=True)
+    payment_date = models.DateField()
+    notes = models.TextField(blank=True)
+    processed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='processed_payments'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Payment for {self.invoice.invoice_number} - ${self.amount_paid}"                    
