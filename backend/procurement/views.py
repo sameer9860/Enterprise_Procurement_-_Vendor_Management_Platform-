@@ -39,6 +39,14 @@ from .serializers import (
     POCreateSerializer, POStatusUpdateSerializer
 )
 
+from .models import Invoice, InvoiceItem, Payment
+from .serializers import (
+    InvoiceSerializer, InvoiceListSerializer,
+    InvoiceSubmitSerializer, InvoiceReviewSerializer,
+    PaymentSerializer, PaymentCreateSerializer
+)
+from accounts.permissions import IsFinance
+
 
 
 class PurchaseRequestViewSet(viewsets.ModelViewSet):
@@ -866,3 +874,202 @@ class PurchaseOrderViewSet(viewsets.ModelViewSet):
                 "cancelled": stats['cancelled_count'],
             }
         })
+
+
+class InvoiceViewSet(viewsets.ModelViewSet):
+    queryset = Invoice.objects.select_related(
+        'purchase_order', 'vendor',
+        'reviewed_by', 'approved_by', 'paid_by'
+    ).prefetch_related('items', 'payment')
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return InvoiceListSerializer
+        return InvoiceSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.role == 'VENDOR':
+            try:
+                return qs.filter(vendor=user.vendor_profile)
+            except Vendor.DoesNotExist:
+                return qs.none()
+        elif user.role == 'FINANCE':
+            return qs
+        elif user.role in ['PROCUREMENT', 'ADMIN']:
+            return qs
+        elif user.role == 'MANAGER':
+            return qs.filter(
+                purchase_order__purchase_request__department=user.department
+            )
+        return qs.none()
+
+    def get_permissions(self):
+        if self.action == 'submit_invoice':
+            return [IsVendor()]
+        if self.action in ['review_invoice', 'mark_under_review']:
+            return [IsFinance()]
+        if self.action == 'record_payment':
+            return [IsFinance()]
+        return [permissions.IsAuthenticated()]
+
+    @action(detail=False, methods=['post'], permission_classes=[IsVendor])
+    def submit_invoice(self, request):
+        """Vendor submits an invoice for a PO"""
+        try:
+            vendor = request.user.vendor_profile
+        except Vendor.DoesNotExist:
+            return Response({"error": "Vendor profile not found."}, status=403)
+
+        serializer = InvoiceSubmitSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        po_id = serializer.validated_data['purchase_order_id']
+
+        try:
+            po = PurchaseOrder.objects.get(id=po_id, vendor=vendor)
+        except PurchaseOrder.DoesNotExist:
+            return Response(
+                {"error": "Purchase order not found or does not belong to you."},
+                status=404
+            )
+
+        # PO must be at least ACKNOWLEDGED
+        if po.status not in ['ACKNOWLEDGED', 'IN_PROGRESS', 'DELIVERED']:
+            return Response(
+                {"error": f"Cannot submit invoice for PO with status '{po.status}'."},
+                status=400
+            )
+
+        # Check no pending invoice already exists
+        existing = Invoice.objects.filter(
+            purchase_order=po,
+            status__in=['SUBMITTED', 'UNDER_REVIEW', 'APPROVED']
+        ).exists()
+        if existing:
+            return Response(
+                {"error": "An active invoice already exists for this PO."},
+                status=400
+            )
+
+        with transaction.atomic():
+            invoice = Invoice.objects.create(
+                invoice_number=Invoice.generate_invoice_number(),
+                purchase_order=po,
+                vendor=vendor,
+                amount=serializer.validated_data['amount'],
+                invoice_date=serializer.validated_data['invoice_date'],
+                due_date=serializer.validated_data['due_date'],
+                notes=serializer.validated_data.get('notes', '')
+            )
+
+            # Create invoice items if provided
+            items_data = serializer.validated_data.get('items', [])
+            for item_data in items_data:
+                InvoiceItem.objects.create(invoice=invoice, **item_data)
+
+            # Update PurchaseRequest status
+            po.purchase_request.status = PurchaseRequest.Status.INVOICE_RECEIVED
+            po.purchase_request.save()
+
+        log_action(request.user, 'SUBMIT_INVOICE', invoice,
+                    details={
+                        "invoice_number": invoice.invoice_number,
+                        "amount": str(invoice.amount),
+                        "po": po.po_number
+                    },
+                    request=request)
+
+        return Response(InvoiceSerializer(invoice).data, status=201)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsVendor])
+    def upload_invoice_file(self, request, pk=None):
+        """Vendor uploads the actual invoice PDF file"""
+        invoice = self.get_object()
+
+        try:
+            vendor = request.user.vendor_profile
+        except Vendor.DoesNotExist:
+            return Response({"error": "Vendor profile not found."}, status=403)
+
+        if invoice.vendor != vendor:
+            return Response(
+                {"error": "This invoice does not belong to you."},
+                status=403
+            )
+
+        if invoice.status != 'SUBMITTED':
+            return Response(
+                {"error": "File can only be uploaded for SUBMITTED invoices."},
+                status=400
+            )
+
+        file = request.FILES.get('file')
+        if not file:
+            return Response({"error": "No file provided."}, status=400)
+
+        # Validate file type
+        allowed_types = ['application/pdf', 'image/jpeg', 'image/png']
+        if file.content_type not in allowed_types:
+            return Response(
+                {"error": "Only PDF, JPEG, and PNG files are allowed."},
+                status=400
+            )
+
+        from django.conf import settings as django_settings
+        if getattr(django_settings, 'USE_SUPABASE', False):
+            from .supabase_utils import upload_invoice_to_supabase
+            file_path = upload_invoice_to_supabase(
+                file, vendor.id, invoice.invoice_number
+            )
+        else:
+            import os
+            upload_dir = f'media/invoices/{vendor.id}'
+            os.makedirs(upload_dir, exist_ok=True)
+            file_path = f"{upload_dir}/{invoice.invoice_number}_{file.name}"
+            with open(file_path, 'wb') as f:
+                for chunk in file.chunks():
+                    f.write(chunk)
+
+        invoice.file_url = file_path
+        invoice.file_name = file.name
+        invoice.save()
+
+        log_action(request.user, 'UPLOAD_INVOICE_FILE', invoice,
+                    details={"file": file.name},
+                    request=request)
+
+        return Response({
+            "message": "Invoice file uploaded successfully.",
+            "invoice_number": invoice.invoice_number,
+            "file_name": invoice.file_name,
+            "file_url": invoice.file_url
+        })
+
+    @action(detail=True, methods=['get'])
+    def get_invoice_file_url(self, request, pk=None):
+        """Get signed URL to download invoice file"""
+        invoice = self.get_object()
+
+        if not invoice.file_url:
+            return Response(
+                {"error": "No file uploaded for this invoice."},
+                status=404
+            )
+
+        from django.conf import settings as django_settings
+        if getattr(django_settings, 'USE_SUPABASE', False):
+            from .supabase_utils import get_supabase_signed_url
+            signed_url = get_supabase_signed_url(invoice.file_url)
+            return Response({
+                "invoice_number": invoice.invoice_number,
+                "download_url": signed_url,
+                "expires_in": "1 hour"
+            })
+        else:
+            return Response({
+                "invoice_number": invoice.invoice_number,
+                "local_path": invoice.file_url
+            })
