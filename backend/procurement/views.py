@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import PurchaseRequest, Approval
 from .serializers import PurchaseRequestSerializer, PurchaseRequestListSerializer, ApprovalSerializer, ApprovalActionSerializer,VendorDocumentSerializer
-from .filters import PurchaseRequestFilter, PurchaseOrderFilter
+from .filters import PurchaseRequestFilter, PurchaseOrderFilter, InvoiceFilter
 from .pagination import StandardResultsPagination
 from accounts.mixins import RoleRequiredMixin
 from accounts.permissions import IsManagerOrAdmin
@@ -882,6 +882,11 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         'reviewed_by', 'approved_by', 'paid_by'
     ).prefetch_related('items', 'payment')
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, drf_filters.SearchFilter, drf_filters.OrderingFilter]
+    filterset_class = InvoiceFilter
+    search_fields = ['invoice_number', 'vendor__company_name', 'purchase_order__po_number']
+    ordering_fields = ['submitted_at', 'amount', 'due_date', 'status']
+    ordering = ['-submitted_at']
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -1073,3 +1078,139 @@ class InvoiceViewSet(viewsets.ModelViewSet):
                 "invoice_number": invoice.invoice_number,
                 "local_path": invoice.file_url
             })
+
+    @action(detail=True, methods=['post'], permission_classes=[IsFinance])
+    def mark_under_review(self, request, pk=None):
+        """Finance marks invoice as under review"""
+        invoice = self.get_object()
+
+        if invoice.status != 'SUBMITTED':
+            return Response(
+                {"error": "Only SUBMITTED invoices can be marked as under review."},
+                status=400
+            )
+
+        invoice.status = 'UNDER_REVIEW'
+        invoice.reviewed_by = request.user
+        invoice.reviewed_at = timezone.now()
+        invoice.save()
+
+        log_action(request.user, 'INVOICE_UNDER_REVIEW', invoice,
+                    request=request)
+
+        return Response({
+            "message": f"Invoice {invoice.invoice_number} is now under review.",
+            "status": invoice.status,
+            "reviewed_by": request.user.username,
+            "reviewed_at": invoice.reviewed_at
+        })
+
+    @action(detail=True, methods=['post'], permission_classes=[IsFinance])
+    def review_invoice(self, request, pk=None):
+        """Finance approves or rejects invoice"""
+        invoice = self.get_object()
+
+        if invoice.status not in ['SUBMITTED', 'UNDER_REVIEW']:
+            return Response(
+                {"error": f"Cannot review invoice with status '{invoice.status}'."},
+                status=400
+            )
+
+        serializer = InvoiceReviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        action_value = serializer.validated_data['action']
+
+        with transaction.atomic():
+            if action_value == 'APPROVE':
+                invoice.status = 'APPROVED'
+                invoice.approved_by = request.user
+                invoice.approved_at = timezone.now()
+                invoice.rejection_reason = ''
+
+            elif action_value == 'REJECT':
+                invoice.status = 'REJECTED'
+                invoice.rejection_reason = serializer.validated_data['rejection_reason']
+
+            elif action_value == 'UNDER_REVIEW':
+                invoice.status = 'UNDER_REVIEW'
+                invoice.reviewed_by = request.user
+                invoice.reviewed_at = timezone.now()
+
+            invoice.save()
+
+        log_action(request.user, f'INVOICE_{action_value}', invoice,
+                    details={
+                        "reason": serializer.validated_data.get('rejection_reason', '')
+                    },
+                    request=request)
+
+        return Response({
+            "message": f"Invoice {action_value.lower()}d successfully.",
+            "invoice_number": invoice.invoice_number,
+            "status": invoice.status
+        })
+
+    @action(detail=True, methods=['post'], permission_classes=[IsFinance])
+    def record_payment(self, request, pk=None):
+        """Finance records payment for approved invoice"""
+        invoice = self.get_object()
+
+        if invoice.status != 'APPROVED':
+            return Response(
+                {"error": "Only APPROVED invoices can be paid."},
+                status=400
+            )
+
+        if hasattr(invoice, 'payment'):
+            return Response(
+                {"error": "Payment already recorded for this invoice."},
+                status=400
+            )
+
+        serializer = PaymentCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Validate amount matches invoice
+        if serializer.validated_data['amount_paid'] != invoice.amount:
+            return Response(
+                {
+                    "error": f"Payment amount ${serializer.validated_data['amount_paid']} "
+                             f"does not match invoice amount ${invoice.amount}."
+                },
+                status=400
+            )
+
+        with transaction.atomic():
+            payment = Payment.objects.create(
+                invoice=invoice,
+                processed_by=request.user,
+                **serializer.validated_data
+            )
+
+            invoice.status = 'PAID'
+            invoice.paid_by = request.user
+            invoice.paid_at = timezone.now()
+            invoice.save()
+
+            # Update PurchaseRequest to COMPLETED
+            invoice.purchase_order.purchase_request.status = PurchaseRequest.Status.COMPLETED
+            invoice.purchase_order.purchase_request.save()
+
+        log_action(request.user, 'INVOICE_PAID', invoice,
+                    details={
+                        "amount": str(payment.amount_paid),
+                        "method": payment.payment_method,
+                        "reference": payment.payment_reference
+                    },
+                    request=request)
+
+        return Response({
+            "message": f"Payment recorded for invoice {invoice.invoice_number}.",
+            "invoice_number": invoice.invoice_number,
+            "amount_paid": str(payment.amount_paid),
+            "payment_method": payment.payment_method,
+            "payment_reference": payment.payment_reference,
+            "status": invoice.status,
+            "purchase_request_status": invoice.purchase_order.purchase_request.status
+        })
