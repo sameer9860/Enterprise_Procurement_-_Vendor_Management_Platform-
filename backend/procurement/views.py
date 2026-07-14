@@ -914,9 +914,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == 'submit_invoice':
             return [IsVendor()]
-        if self.action in ['review_invoice', 'mark_under_review']:
-            return [IsFinance()]
-        if self.action == 'record_payment':
+        if self.action in ['review_invoice', 'mark_under_review', 'record_payment', 'summary']:
             return [IsFinance()]
         return [permissions.IsAuthenticated()]
 
@@ -1213,4 +1211,81 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             "payment_reference": payment.payment_reference,
             "status": invoice.status,
             "purchase_request_status": invoice.purchase_order.purchase_request.status
+        })
+
+    # ------------------------------------------------------------------
+    # Day 29 — Step 1: Invoice Timeline
+    # ------------------------------------------------------------------
+    @action(detail=True, methods=['get'])
+    def timeline(self, request, pk=None):
+        """Return the full audit-log timeline for an invoice."""
+        invoice = self.get_object()
+
+        from audit.models import AuditLog
+        logs = AuditLog.objects.filter(
+            model_name='Invoice',
+            object_id=invoice.id
+        ).select_related('user').order_by('timestamp')
+
+        timeline = []
+        for log in logs:
+            timeline.append({
+                "action": log.action,
+                "performed_by": log.user.username if log.user else "System",
+                "role": log.user.role if log.user else "N/A",
+                "details": log.details,
+                "timestamp": log.timestamp
+            })
+
+        return Response({
+            "invoice_number": invoice.invoice_number,
+            "po_number": invoice.purchase_order.po_number,
+            "vendor": invoice.vendor.company_name,
+            "amount": str(invoice.amount),
+            "current_status": invoice.status,
+            "timeline": timeline
+        })
+
+    # ------------------------------------------------------------------
+    # Day 29 — Step 2: Invoice Summary
+    # ------------------------------------------------------------------
+    @action(detail=False, methods=['get'], permission_classes=[IsFinance])
+    def summary(self, request):
+        """Finance-only summary statistics for all invoices."""
+        from django.db.models import Sum, Count, Q
+        from django.utils import timezone as tz
+
+        today = tz.now().date()
+
+        stats = Invoice.objects.aggregate(
+            total_invoices=Count('id'),
+            total_value=Sum('amount'),
+            submitted_count=Count('id', filter=Q(status='SUBMITTED')),
+            under_review_count=Count('id', filter=Q(status='UNDER_REVIEW')),
+            approved_count=Count('id', filter=Q(status='APPROVED')),
+            rejected_count=Count('id', filter=Q(status='REJECTED')),
+            paid_count=Count('id', filter=Q(status='PAID')),
+            overdue_count=Count('id', filter=Q(
+                due_date__lt=today,
+                status__in=['SUBMITTED', 'UNDER_REVIEW', 'APPROVED']
+            )),
+            total_paid_value=Sum('amount', filter=Q(status='PAID')),
+            total_pending_value=Sum('amount', filter=Q(
+                status__in=['SUBMITTED', 'UNDER_REVIEW', 'APPROVED']
+            ))
+        )
+
+        return Response({
+            "total_invoices": stats['total_invoices'],
+            "total_value": str(stats['total_value'] or 0),
+            "total_paid_value": str(stats['total_paid_value'] or 0),
+            "total_pending_value": str(stats['total_pending_value'] or 0),
+            "overdue_invoices": stats['overdue_count'],
+            "by_status": {
+                "submitted": stats['submitted_count'],
+                "under_review": stats['under_review_count'],
+                "approved": stats['approved_count'],
+                "rejected": stats['rejected_count'],
+                "paid": stats['paid_count'],
+            }
         })
