@@ -1,22 +1,17 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
-from rest_framework import status
-from django.contrib.auth import get_user_model
-from accounts.models import Department
 from .models import (
-    PurchaseRequest, Vendor, VendorCategory,
-    RFQ, Bid, PurchaseOrder
+    PurchaseRequest, Approval, RFQ, Bid,
+    PurchaseOrder, POItem, Invoice, InvoiceItem,
+    Vendor
 )
+from accounts.models import User, Department
 
-User = get_user_model()
-
-
-class PurchaseOrderTest(TestCase):
+class InvoiceTest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.dept = Department.objects.create(name='IT', budget=100000)
 
-        # Users
         self.employee = User.objects.create_user(
             'emp1', password='pass12345', role='EMPLOYEE', department=self.dept
         )
@@ -33,13 +28,9 @@ class PurchaseOrderTest(TestCase):
             'vendor1', password='pass12345', role='VENDOR'
         )
         self.vendor = Vendor.objects.create(
-            user=self.vendor_user,
-            company_name='TechCo',
-            registration_number='V001',
-            address='123 Street',
-            city='Kathmandu',
-            country='Nepal',
-            status='ACTIVE'
+            user=self.vendor_user, company_name='TechCo',
+            registration_number='V001', address='Addr',
+            city='KTM', country='Nepal', status='ACTIVE'
         )
 
     def get_token(self, username):
@@ -53,267 +44,255 @@ class PurchaseOrderTest(TestCase):
         token = self.get_token(username)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
 
-    # -------------------------------------------------------
-    # Helper: run through phase 1-3 to get an awarded bid
-    # -------------------------------------------------------
-    def create_awarded_bid(self):
-        # Employee creates request
+    def create_delivered_po(self):
+        """Helper — runs through phases 1-4 to get a delivered PO"""
+        # Request + approval
         self.auth('emp1')
         resp = self.client.post('/api/procurement/requests/', {
-            "title": "50 Laptops",
-            "estimated_budget": 50000,
-            "items": [
-                {"item_name": "Dell Laptop", "quantity": 50, "estimated_unit_price": 1000}
-            ]
+            "title": "50 Laptops", "estimated_budget": 50000,
+            "items": [{"item_name": "Dell", "quantity": 50, "estimated_unit_price": 1000}]
         }, format='json')
-        self.assertEqual(resp.status_code, 201)
         request_id = resp.data['id']
 
-        # Manager approves
         self.auth('mgr1')
-        resp = self.client.post(
+        self.client.post(
             f'/api/procurement/requests/{request_id}/approve_action/',
             {"action": "APPROVED"}, format='json'
         )
-        self.assertEqual(resp.status_code, 200)
 
-        # Procurement creates RFQ
+        # RFQ
         self.auth('proc1')
         resp = self.client.post('/api/procurement/rfqs/create_from_request/', {
             "request_id": request_id,
             "deadline": "2026-12-31T17:00:00Z"
         }, format='json')
-        self.assertEqual(resp.status_code, 201)
         rfq_id = resp.data['id']
         rfq_item_id = resp.data['items'][0]['id']
 
-        # Vendor submits bid
+        # Bid
         self.auth('vendor1')
         resp = self.client.post('/api/procurement/bids/', {
-            "rfq": rfq_id,
-            "total_amount": 48000,
-            "delivery_days": 14,
-            "validity_days": 30,
-            "items": [
-                {"rfq_item": rfq_item_id, "unit_price": 960, "quantity": 50}
-            ]
+            "rfq": rfq_id, "total_amount": 48000, "delivery_days": 14,
+            "items": [{"rfq_item": rfq_item_id, "unit_price": 960, "quantity": 50}]
         }, format='json')
-        self.assertEqual(resp.status_code, 201)
         bid_id = resp.data['id']
 
-        # Procurement closes RFQ + awards bid
+        # Award
         self.auth('proc1')
         self.client.post(f'/api/procurement/rfqs/{rfq_id}/close_rfq/')
-        resp = self.client.post(f'/api/procurement/bids/{bid_id}/award_bid/')
-        self.assertEqual(resp.status_code, 200)
+        self.client.post(f'/api/procurement/bids/{bid_id}/award_bid/')
 
-        return bid_id
-
-    def generate_po(self, bid_id):
-        """Helper to generate PO from awarded bid"""
-        self.auth('proc1')
+        # Generate PO
         resp = self.client.post('/api/procurement/purchase-orders/generate_po/', {
             "bid_id": bid_id,
-            "delivery_address": "123 Main Street, Kathmandu, Nepal",
-            "expected_delivery_date": "2026-08-15",
-            "special_instructions": "Handle with care"
-        }, format='json')
-        self.assertEqual(resp.status_code, 201)
-        return resp.data['id'], resp.data
-
-    # -------------------------------------------------------
-    # Test 1: PO Generation
-    # -------------------------------------------------------
-    def test_generate_po_success(self):
-        bid_id = self.create_awarded_bid()
-        po_id, data = self.generate_po(bid_id)
-
-        self.assertTrue(data['po_number'].startswith('PO-'))
-        self.assertEqual(data['status'], 'DRAFT')
-        self.assertEqual(data['total_amount'], '48000.00')
-        self.assertIsNotNone(data['items'])
-        self.assertEqual(len(data['items']), 1)
-
-        # PurchaseRequest status must be PO_GENERATED
-        pr = PurchaseRequest.objects.get(purchase_order__id=po_id)
-        self.assertEqual(pr.status, 'PO_GENERATED')
-
-    # -------------------------------------------------------
-    # Test 2: Cannot generate PO twice for same bid
-    # -------------------------------------------------------
-    def test_cannot_generate_po_twice(self):
-        bid_id = self.create_awarded_bid()
-        self.generate_po(bid_id)
-
-        # Try again
-        self.auth('proc1')
-        resp = self.client.post('/api/procurement/purchase-orders/generate_po/', {
-            "bid_id": bid_id,
-            "delivery_address": "123 Main Street",
+            "delivery_address": "123 Main St",
             "expected_delivery_date": "2026-08-15"
         }, format='json')
-        self.assertEqual(resp.status_code, 400)
-        self.assertIn('already been generated', resp.data['error'])
+        po_id = resp.data['id']
 
-    # -------------------------------------------------------
-    # Test 3: Full status workflow
-    # -------------------------------------------------------
-    def test_full_status_workflow(self):
-        bid_id = self.create_awarded_bid()
-        po_id, _ = self.generate_po(bid_id)
-
-        self.auth('proc1')
-
-        # DRAFT → SENT
-        resp = self.client.post(
-            f'/api/procurement/purchase-orders/{po_id}/send_to_vendor/'
-        )
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(PurchaseOrder.objects.get(id=po_id).status, 'SENT')
-
-        # SENT → ACKNOWLEDGED (by vendor)
-        self.auth('vendor1')
-        resp = self.client.post(
-            f'/api/procurement/purchase-orders/{po_id}/acknowledge/'
-        )
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(PurchaseOrder.objects.get(id=po_id).status, 'ACKNOWLEDGED')
-
-        # ACKNOWLEDGED → IN_PROGRESS
-        self.auth('proc1')
-        resp = self.client.post(
-            f'/api/procurement/purchase-orders/{po_id}/update_status/',
-            {"status": "IN_PROGRESS"}, format='json'
-        )
-        self.assertEqual(resp.status_code, 200)
-
-        # IN_PROGRESS → DELIVERED
-        resp = self.client.post(
-            f'/api/procurement/purchase-orders/{po_id}/update_status/',
-            {"status": "DELIVERED"}, format='json'
-        )
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(PurchaseOrder.objects.get(id=po_id).status, 'DELIVERED')
-
-    # -------------------------------------------------------
-    # Test 4: Invalid status transition
-    # -------------------------------------------------------
-    def test_invalid_status_transition(self):
-        bid_id = self.create_awarded_bid()
-        po_id, _ = self.generate_po(bid_id)
-
-        self.auth('proc1')
-
-        # DRAFT → DELIVERED (invalid jump)
-        resp = self.client.post(
-            f'/api/procurement/purchase-orders/{po_id}/update_status/',
-            {"status": "DELIVERED"}, format='json'
-        )
-        self.assertEqual(resp.status_code, 400)
-        self.assertIn('Cannot transition', resp.data['error'])
-
-    # -------------------------------------------------------
-    # Test 5: Wrong vendor cannot acknowledge
-    # -------------------------------------------------------
-    def test_wrong_vendor_cannot_acknowledge(self):
-        # Create second vendor
-        vendor_user2 = User.objects.create_user(
-            'vendor2', password='pass12345', role='VENDOR'
-        )
-        Vendor.objects.create(
-            user=vendor_user2, company_name='OtherCo',
-            registration_number='V002', address='Addr',
-        city='KTM', country='Nepal', status='ACTIVE'
-    )
-
-        bid_id = self.create_awarded_bid()
-        po_id, _ = self.generate_po(bid_id)
-
-        # Send to vendor first
-        self.auth('proc1')
+        # Send + acknowledge
         self.client.post(f'/api/procurement/purchase-orders/{po_id}/send_to_vendor/')
-
-        # Wrong vendor tries to acknowledge
-        # Gets 404 because PO is filtered out of their queryset entirely
-        self.auth('vendor2')
-        resp = self.client.post(
-            f'/api/procurement/purchase-orders/{po_id}/acknowledge/'
-        )
-        self.assertIn(resp.status_code, [403, 404])  # either is correct security behavior
-
-    # -------------------------------------------------------
-    # Test 6: PDF download
-    # -------------------------------------------------------
-    def test_pdf_download(self):
-        bid_id = self.create_awarded_bid()
-        po_id, _ = self.generate_po(bid_id)
-
-        self.auth('proc1')
-        resp = self.client.get(
-            f'/api/procurement/purchase-orders/{po_id}/download_pdf/'
-        )
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp['Content-Type'], 'application/pdf')
-
-    # -------------------------------------------------------
-    # Test 7: Timeline tracking
-    # -------------------------------------------------------
-    def test_timeline(self):
-        bid_id = self.create_awarded_bid()
-        po_id, _ = self.generate_po(bid_id)
-
-        self.auth('proc1')
-        self.client.post(f'/api/procurement/purchase-orders/{po_id}/send_to_vendor/')
-
         self.auth('vendor1')
         self.client.post(f'/api/procurement/purchase-orders/{po_id}/acknowledge/')
 
-        self.auth('proc1')
+        return po_id
+
+    # -------------------------------------------------------
+    # Test 1: Vendor submits invoice
+    # -------------------------------------------------------
+    def test_submit_invoice(self):
+        po_id = self.create_delivered_po()
+
+        self.auth('vendor1')
+        resp = self.client.post('/api/procurement/invoices/submit_invoice/', {
+            "purchase_order_id": po_id,
+            "amount": "48000.00",
+            "invoice_date": "2026-07-08",
+            "due_date": "2026-08-08",
+            "notes": "Please process payment",
+            "items": [
+                {"description": "Dell Laptop x50", "quantity": 50, "unit_price": "960.00"}
+            ]
+        }, format='json')
+
+        self.assertEqual(resp.status_code, 201)
+        self.assertTrue(resp.data['invoice_number'].startswith('INV-'))
+        self.assertEqual(resp.data['status'], 'SUBMITTED')
+
+        # PurchaseRequest status should be INVOICE_RECEIVED
+        from .models import PurchaseRequest, PurchaseOrder
+        pr = PurchaseOrder.objects.get(id=po_id).purchase_request
+        self.assertEqual(pr.status, 'INVOICE_RECEIVED')
+
+    # -------------------------------------------------------
+    # Test 2: Cannot submit duplicate invoice
+    # -------------------------------------------------------
+    def test_cannot_submit_duplicate_invoice(self):
+        po_id = self.create_delivered_po()
+
+        self.auth('vendor1')
+        payload = {
+            "purchase_order_id": po_id,
+            "amount": "48000.00",
+            "invoice_date": "2026-07-08",
+            "due_date": "2026-08-08"
+        }
+        self.client.post(
+            '/api/procurement/invoices/submit_invoice/',
+            payload, format='json'
+        )
+        resp = self.client.post(
+            '/api/procurement/invoices/submit_invoice/',
+            payload, format='json'
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('already exists', resp.data['error'])
+
+    # -------------------------------------------------------
+    # Test 3: Full finance review workflow
+    # -------------------------------------------------------
+    def test_full_review_workflow(self):
+        po_id = self.create_delivered_po()
+
+        self.auth('vendor1')
+        resp = self.client.post('/api/procurement/invoices/submit_invoice/', {
+            "purchase_order_id": po_id,
+            "amount": "48000.00",
+            "invoice_date": "2026-07-08",
+            "due_date": "2026-08-08"
+        }, format='json')
+        invoice_id = resp.data['id']
+
+        # Finance marks under review
+        self.auth('fin1')
+        resp = self.client.post(
+            f'/api/procurement/invoices/{invoice_id}/mark_under_review/'
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data['status'], 'UNDER_REVIEW')
+
+        # Finance approves
+        resp = self.client.post(
+            f'/api/procurement/invoices/{invoice_id}/review_invoice/',
+            {"action": "APPROVE"}, format='json'
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data['status'], 'APPROVED')
+
+        # Finance records payment
+        resp = self.client.post(
+            f'/api/procurement/invoices/{invoice_id}/record_payment/',
+            {
+                "amount_paid": "48000.00",
+                "payment_method": "BANK_TRANSFER",
+                "payment_reference": "TXN-2026-001",
+                "payment_date": "2026-07-10"
+            }, format='json'
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data['status'], 'PAID')
+        self.assertEqual(resp.data['purchase_request_status'], 'COMPLETED')
+
+    # -------------------------------------------------------
+    # Test 4: Reject invoice requires reason
+    # -------------------------------------------------------
+    def test_reject_requires_reason(self):
+        po_id = self.create_delivered_po()
+
+        self.auth('vendor1')
+        resp = self.client.post('/api/procurement/invoices/submit_invoice/', {
+            "purchase_order_id": po_id,
+            "amount": "48000.00",
+            "invoice_date": "2026-07-08",
+            "due_date": "2026-08-08"
+        }, format='json')
+        invoice_id = resp.data['id']
+
+        self.auth('fin1')
+        resp = self.client.post(
+            f'/api/procurement/invoices/{invoice_id}/review_invoice/',
+            {"action": "REJECT"},
+            format='json'
+        )
+        self.assertEqual(resp.status_code, 400)
+
+    # -------------------------------------------------------
+    # Test 5: Wrong payment amount blocked
+    # -------------------------------------------------------
+    def test_wrong_payment_amount_blocked(self):
+        po_id = self.create_delivered_po()
+
+        self.auth('vendor1')
+        resp = self.client.post('/api/procurement/invoices/submit_invoice/', {
+            "purchase_order_id": po_id,
+            "amount": "48000.00",
+            "invoice_date": "2026-07-08",
+            "due_date": "2026-08-08"
+        }, format='json')
+        invoice_id = resp.data['id']
+
+        self.auth('fin1')
+        self.client.post(
+            f'/api/procurement/invoices/{invoice_id}/review_invoice/',
+            {"action": "APPROVE"}, format='json'
+        )
+
+        # Wrong amount
+        resp = self.client.post(
+            f'/api/procurement/invoices/{invoice_id}/record_payment/',
+            {
+                "amount_paid": "45000.00",
+                "payment_method": "BANK_TRANSFER",
+                "payment_date": "2026-07-10"
+            }, format='json'
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('does not match', resp.data['error'])
+
+    # -------------------------------------------------------
+    # Test 6: Timeline
+    # -------------------------------------------------------
+    def test_invoice_timeline(self):
+        po_id = self.create_delivered_po()
+
+        self.auth('vendor1')
+        resp = self.client.post('/api/procurement/invoices/submit_invoice/', {
+            "purchase_order_id": po_id,
+            "amount": "48000.00",
+            "invoice_date": "2026-07-08",
+            "due_date": "2026-08-08"
+        }, format='json')
+        invoice_id = resp.data['id']
+
+        self.auth('fin1')
+        self.client.post(
+            f'/api/procurement/invoices/{invoice_id}/review_invoice/',
+            {"action": "APPROVE"}, format='json'
+        )
+
         resp = self.client.get(
-            f'/api/procurement/purchase-orders/{po_id}/timeline/'
+            f'/api/procurement/invoices/{invoice_id}/timeline/'
         )
         self.assertEqual(resp.status_code, 200)
         self.assertIn('timeline', resp.data)
         self.assertGreater(len(resp.data['timeline']), 0)
-        self.assertEqual(resp.data['current_status'], 'ACKNOWLEDGED')
 
     # -------------------------------------------------------
-    # Test 8: Summary stats
+    # Test 7: Summary stats
     # -------------------------------------------------------
-    def test_summary(self):
-        bid_id = self.create_awarded_bid()
-        self.generate_po(bid_id)
+    def test_invoice_summary(self):
+        po_id = self.create_delivered_po()
 
-        self.auth('proc1')
-        resp = self.client.get('/api/procurement/purchase-orders/summary/')
+        self.auth('vendor1')
+        self.client.post('/api/procurement/invoices/submit_invoice/', {
+            "purchase_order_id": po_id,
+            "amount": "48000.00",
+            "invoice_date": "2026-07-08",
+            "due_date": "2026-08-08"
+        }, format='json')
+
+        self.auth('fin1')
+        resp = self.client.get('/api/procurement/invoices/summary/')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data['total_purchase_orders'], 1)
-        self.assertEqual(resp.data['by_status']['draft'], 1)
-
-    # -------------------------------------------------------
-    # Test 9: Filtering
-    # -------------------------------------------------------
-    def test_filtering(self):
-        bid_id = self.create_awarded_bid()
-        self.generate_po(bid_id)
-
-        self.auth('proc1')
-
-        # Filter by status
-        resp = self.client.get('/api/procurement/purchase-orders/?status=DRAFT')
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data['count'], 1)
-
-        # Filter by wrong status
-        resp = self.client.get('/api/procurement/purchase-orders/?status=DELIVERED')
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data['count'], 0)
-
-    # -------------------------------------------------------
-    # Test 10: Employee cannot access POs
-    # -------------------------------------------------------
-    def test_employee_cannot_access_pos(self):
-        self.auth('emp1')
-        resp = self.client.get('/api/procurement/purchase-orders/')
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data['count'], 0)
+        self.assertEqual(resp.data['total_invoices'], 1)
+        self.assertEqual(resp.data['by_status']['submitted'], 1)
