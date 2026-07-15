@@ -27,3 +27,9 @@ tinycss2==1.5.1
 weasyprint==62.3
 webencodings==0.5.1
 zopfli==0.4.3
+# Celery + Redis (Phase 6 - Day 30)
+celery==5.3.6
+redis==5.0.4
+django-celery-beat==2.6.0
+django-celery-results==2.5.1
+flower==2.0.1
