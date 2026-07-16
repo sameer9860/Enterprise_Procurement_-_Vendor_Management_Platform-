@@ -1,0 +1,12 @@
+{% extends "emails/base_email.html" %}
+{% block content %}
+  <p>Dear {{ requester_name }},</p>
+  <span class="badge badge-rejected">Request Rejected</span>
+  <p>Unfortunately, your purchase request has been <strong>rejected</strong>.</p>
+  <div class="info-box">
+    <p><strong>Request Title:</strong> {{ request_title }}</p>
+    <p><strong>Rejected By:</strong> {{ rejected_by }}</p>
+    <p><strong>Comments:</strong> {{ comments }}</p>
+  </div>
+  <p>Please contact your manager for further clarification.</p>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "emails/base_email.html" %}
+{% block content %}
+  <p>Dear {{ manager_name }},</p>
+  <span class="badge badge-pending">Pending Your Approval</span>
+  <p>A new purchase request has been submitted and requires your approval.</p>
+  <div class="info-box">
+    <p><strong>Request Title:</strong> {{ request_title }}</p>
+    <p><strong>Requested By:</strong> {{ requester_name }}</p>
+    <p><strong>Department:</strong> {{ department }}</p>
+    <p><strong>Estimated Budget:</strong> ${{ estimated_budget }}</p>
+    <p><strong>Submitted At:</strong> {{ submitted_at }}</p>
+  </div>
+  <p>Please log in to review and take action on this request.</p>
+{% endblock %}

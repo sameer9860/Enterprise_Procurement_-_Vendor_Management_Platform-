@@ -1,0 +1,13 @@
+{% extends "emails/base_email.html" %}
+{% block content %}
+  <p>Dear {{ requester_name }},</p>
+  <span class="badge badge-approved">Request Approved</span>
+  <p>Your purchase request has been <strong>approved</strong>.</p>
+  <div class="info-box">
+    <p><strong>Request Title:</strong> {{ request_title }}</p>
+    <p><strong>Approved By:</strong> {{ approved_by }}</p>
+    <p><strong>Estimated Budget:</strong> ${{ estimated_budget }}</p>
+    <p><strong>Approved At:</strong> {{ approved_at }}</p>
+  </div>
+  <p>The procurement team will now create an RFQ and invite vendors to bid.</p>
+{% endblock %}

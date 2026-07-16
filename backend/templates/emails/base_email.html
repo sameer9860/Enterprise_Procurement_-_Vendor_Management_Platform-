@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 30px auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .header { background: #1a5276; padding: 24px 30px; }
+    .header h1 { color: white; margin: 0; font-size: 20px; }
+    .header p { color: #aed6f1; margin: 4px 0 0; font-size: 13px; }
+    .body { padding: 30px; }
+    .body p { color: #333; line-height: 1.6; margin-bottom: 12px; }
+    .badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 16px; }
+    .badge-pending { background: #fef9e7; color: #b7950b; }
+    .badge-approved { background: #d5f5e3; color: #1e8449; }
+    .badge-rejected { background: #fadbd8; color: #922b21; }
+    .badge-info { background: #d6eaf8; color: #1a5276; }
+    .info-box { background: #f8f9fa; border-left: 4px solid #1a5276; padding: 16px; border-radius: 4px; margin: 16px 0; }
+    .info-box p { margin: 4px 0; font-size: 13px; }
+    .btn { display: inline-block; padding: 12px 24px; background: #1a5276; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 16px; }
+    .footer { background: #f8f9fa; padding: 16px 30px; text-align: center; color: #888; font-size: 12px; border-top: 1px solid #eee; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Procurement Platform</h1>
+      <p>Enterprise Procurement & Vendor Management</p>
+    </div>
+    <div class="body">
+      {% block content %}{% endblock %}
+    </div>
+    <div class="footer">
+      <p>This is an automated notification. Please do not reply to this email.</p>
+      <p>© 2026 Procurement Platform. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
