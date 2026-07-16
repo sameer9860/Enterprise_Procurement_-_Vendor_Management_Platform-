@@ -1,0 +1,13 @@
+{% extends "emails/base_email.html" %}
+{% block content %}
+  <p>Dear {{ vendor_name }},</p>
+  <span class="badge badge-info">New RFQ Invitation</span>
+  <p>You have been invited to submit a bid for the following Request for Quotation.</p>
+  <div class="info-box">
+    <p><strong>RFQ Number:</strong> {{ rfq_number }}</p>
+    <p><strong>Title:</strong> {{ rfq_title }}</p>
+    <p><strong>Deadline:</strong> {{ deadline }}</p>
+    <p><strong>Estimated Budget:</strong> ${{ estimated_budget }}</p>
+  </div>
+  <p>Please log in to view the full details and submit your bid before the deadline.</p>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "emails/base_email.html" %}
+{% block content %}
+  <p>Dear {{ vendor_name }},</p>
+  <span class="badge badge-approved">Bid Awarded</span>
+  <p>Congratulations! Your bid has been selected and awarded.</p>
+  <div class="info-box">
+    <p><strong>RFQ Number:</strong> {{ rfq_number }}</p>
+    <p><strong>Awarded Amount:</strong> ${{ awarded_amount }}</p>
+    <p><strong>Delivery Days:</strong> {{ delivery_days }}</p>
+  </div>
+  <p>A Purchase Order will be generated and sent to you shortly.</p>
+{% endblock %}
