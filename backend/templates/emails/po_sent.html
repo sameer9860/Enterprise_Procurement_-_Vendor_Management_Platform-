@@ -1,0 +1,13 @@
+{% extends "emails/base_email.html" %}
+{% block content %}
+  <p>Dear {{ vendor_name }},</p>
+  <span class="badge badge-info">Purchase Order Received</span>
+  <p>A Purchase Order has been issued to you. Please review and acknowledge.</p>
+  <div class="info-box">
+    <p><strong>PO Number:</strong> {{ po_number }}</p>
+    <p><strong>Total Amount:</strong> ${{ total_amount }}</p>
+    <p><strong>Expected Delivery:</strong> {{ expected_delivery_date }}</p>
+    <p><strong>Delivery Address:</strong> {{ delivery_address }}</p>
+  </div>
+  <p>Please log in to acknowledge this purchase order.</p>
+{% endblock %}
