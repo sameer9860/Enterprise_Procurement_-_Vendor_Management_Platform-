@@ -1,0 +1,14 @@
+{% extends "emails/base_email.html" %}
+{% block content %}
+  <p>Dear {{ vendor_name }},</p>
+  <span class="badge badge-approved">Payment Processed</span>
+  <p>Your invoice has been approved and payment has been processed.</p>
+  <div class="info-box">
+    <p><strong>Invoice Number:</strong> {{ invoice_number }}</p>
+    <p><strong>Amount Paid:</strong> ${{ amount_paid }}</p>
+    <p><strong>Payment Method:</strong> {{ payment_method }}</p>
+    <p><strong>Payment Reference:</strong> {{ payment_reference }}</p>
+    <p><strong>Payment Date:</strong> {{ payment_date }}</p>
+  </div>
+  <p>Thank you for your service. We look forward to working with you again.</p>
+{% endblock %}

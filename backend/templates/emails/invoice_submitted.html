@@ -1,0 +1,14 @@
+{% extends "emails/base_email.html" %}
+{% block content %}
+  <p>Dear Finance Team,</p>
+  <span class="badge badge-pending">Invoice Pending Review</span>
+  <p>A new invoice has been submitted and requires your review.</p>
+  <div class="info-box">
+    <p><strong>Invoice Number:</strong> {{ invoice_number }}</p>
+    <p><strong>Vendor:</strong> {{ vendor_name }}</p>
+    <p><strong>PO Number:</strong> {{ po_number }}</p>
+    <p><strong>Amount:</strong> ${{ amount }}</p>
+    <p><strong>Due Date:</strong> {{ due_date }}</p>
+  </div>
+  <p>Please log in to review and process this invoice.</p>
+{% endblock %}
