@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     # Phase 6 — Celery task infrastructure
     'django_celery_beat',
     'django_celery_results',
+    'notifications',
 ]
 
 MIDDLEWARE = [
