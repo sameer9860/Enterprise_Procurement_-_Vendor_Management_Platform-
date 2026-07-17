@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'accounts',
     'procurement',
     'audit',
-    # Phase 6 — Celery task infrastructure
     'django_celery_beat',
     'django_celery_results',
     'notifications',
@@ -171,9 +170,7 @@ SUPABASE_STORAGE_BUCKET = config('SUPABASE_STORAGE_BUCKET')
 USE_SUPABASE = bool(SUPABASE_URL and SUPABASE_KEY)
 
 
-# ─────────────────────────────────────────────────────────────
-# Celery Configuration (Phase 6 — Day 30)
-# ─────────────────────────────────────────────────────────────
+# Celery Configuration 
 CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='')
 CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='')
 CELERY_ACCEPT_CONTENT = ['json']
@@ -183,10 +180,17 @@ CELERY_TIMEZONE = 'Asia/Kathmandu'
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 CELERY_RESULT_EXTENDED = True
 
+# Upstash SSL settings
+CELERY_BROKER_USE_SSL = {
+    'ssl_cert_reqs': 'none'
+}
+CELERY_REDIS_BACKEND_USE_SSL = {
+    'ssl_cert_reqs': 'none'
+}
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
-# ─────────────────────────────────────────────────────────────
+
 # Email Configuration (Gmail SMTP)
-# ─────────────────────────────────────────────────────────────
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
