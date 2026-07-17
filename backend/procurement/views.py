@@ -17,6 +17,15 @@ from .supabase_utils import upload_vendor_document_to_supabase, get_supabase_sig
 from django.utils import timezone
 from django.db.models import Q
 from django.db import transaction
+from notifications.tasks import (
+    notify_manager_new_request,
+    notify_requester_approval_action,
+    notify_vendors_rfq_created,
+    notify_vendor_bid_awarded,
+    notify_vendor_po_sent,
+    notify_finance_invoice_submitted,
+    notify_vendor_invoice_paid,
+)
 
 from .models import Vendor, VendorCategory, VendorDocument
 
@@ -80,6 +89,8 @@ class PurchaseRequestViewSet(viewsets.ModelViewSet):
         log_action(self.request.user, 'CREATE', instance, 
                     details={"title": instance.title, "budget": str(instance.estimated_budget)}, 
                     request=self.request)
+        # Fire async notification to department managers
+        notify_manager_new_request.delay(instance.id)
 
     def perform_update(self, serializer):
         instance = serializer.save()
@@ -130,6 +141,11 @@ class PurchaseRequestViewSet(viewsets.ModelViewSet):
 
         log_action(request.user, action_value, purchase_request,
                     details={"comments": comments}, request=request)
+
+        # Fire async notification to requester
+        notify_requester_approval_action.delay(
+            purchase_request.id, action_value, comments
+        )
 
         return Response({
             "message": f"Request {action_value.lower()} successfully.",
@@ -373,6 +389,9 @@ class RFQViewSet(viewsets.ModelViewSet):
                     details={"rfq_number": rfq.rfq_number, "vendors_invited": vendors.count()},
                     request=request)
 
+        # Fire async notification to invited vendors
+        notify_vendors_rfq_created.delay(rfq.id)
+
         return Response(RFQSerializer(rfq).data, status=201)
 
     @action(detail=True, methods=['post'], permission_classes=[IsProcurement])
@@ -560,6 +579,9 @@ class BidViewSet(viewsets.ModelViewSet):
             request=request,
         )
 
+        # Fire async notification to awarded vendor
+        notify_vendor_bid_awarded.delay(bid.id)
+
         return Response({
             "message": f"Bid awarded to {bid.vendor.company_name}.",
             "bid_id": bid.id,
@@ -744,6 +766,9 @@ class PurchaseOrderViewSet(viewsets.ModelViewSet):
         log_action(request.user, 'SEND_PO', po,
                     details={"po_number": po.po_number},
                     request=request)
+
+        # Fire async notification to vendor
+        notify_vendor_po_sent.delay(po.id)
 
         return Response({
             "message": f"PO {po.po_number} sent to {po.vendor.company_name}.",
@@ -985,6 +1010,9 @@ class InvoiceViewSet(viewsets.ModelViewSet):
                     },
                     request=request)
 
+        # Fire async notification to finance team
+        notify_finance_invoice_submitted.delay(invoice.id)
+
         return Response(InvoiceSerializer(invoice).data, status=201)
 
     @action(detail=True, methods=['post'], permission_classes=[IsVendor])
@@ -1202,6 +1230,9 @@ class InvoiceViewSet(viewsets.ModelViewSet):
                         "reference": payment.payment_reference
                     },
                     request=request)
+
+        # Fire async notification to vendor
+        notify_vendor_invoice_paid.delay(invoice.id)
 
         return Response({
             "message": f"Payment recorded for invoice {invoice.invoice_number}.",
