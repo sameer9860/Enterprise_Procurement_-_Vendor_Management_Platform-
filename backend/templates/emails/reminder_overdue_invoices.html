@@ -1,0 +1,17 @@
+{% extends "emails/base_email.html" %}
+{% block content %}
+  <p>Dear {{ finance_name }},</p>
+  <span class="badge badge-rejected">Overdue Invoices</span>
+  <p>There are <strong>{{ overdue_count }}</strong> overdue invoice(s) that require immediate attention.</p>
+  {% for invoice in invoices %}
+  <div class="info-box">
+    <p><strong>Invoice:</strong> {{ invoice.invoice_number }}</p>
+    <p><strong>Vendor:</strong> {{ invoice.vendor }}</p>
+    <p><strong>Amount:</strong> ${{ invoice.amount }}</p>
+    <p><strong>Due Date:</strong> {{ invoice.due_date }}</p>
+    <p><strong>Days Overdue:</strong> {{ invoice.days_overdue }} days</p>
+    <p><strong>Status:</strong> {{ invoice.status }}</p>
+  </div>
+  {% endfor %}
+  <p>Please process these invoices as soon as possible.</p>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "emails/base_email.html" %}
+{% block content %}
+  <p>Dear {{ procurement_name }},</p>
+  <span class="badge badge-info">Delivery Due Tomorrow</span>
+  <p>The following Purchase Order(s) have delivery due tomorrow.</p>
+  {% for po in pos %}
+  <div class="info-box">
+    <p><strong>PO Number:</strong> {{ po.po_number }}</p>
+    <p><strong>Vendor:</strong> {{ po.vendor }}</p>
+    <p><strong>Amount:</strong> ${{ po.amount }}</p>
+    <p><strong>Status:</strong> {{ po.status }}</p>
+  </div>
+  {% endfor %}
+  <p>Please follow up with the vendor if needed.</p>
+{% endblock %}
