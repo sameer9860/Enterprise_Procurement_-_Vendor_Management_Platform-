@@ -1,0 +1,13 @@
+{% extends "emails/base_email.html" %}
+{% block content %}
+  <p>Dear {{ manager_name }},</p>
+  <span class="badge badge-pending">Action Required</span>
+  <p>This is a reminder that the following purchase request has been waiting for your approval for <strong>{{ days_pending }} days</strong>.</p>
+  <div class="info-box">
+    <p><strong>Request Title:</strong> {{ request_title }}</p>
+    <p><strong>Requested By:</strong> {{ requester_name }}</p>
+    <p><strong>Estimated Budget:</strong> ${{ estimated_budget }}</p>
+    <p><strong>Days Pending:</strong> {{ days_pending }} days</p>
+  </div>
+  <p>Please log in and take action on this request as soon as possible.</p>
+{% endblock %}

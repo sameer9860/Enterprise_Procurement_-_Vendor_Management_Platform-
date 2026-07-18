@@ -1,0 +1,12 @@
+{% extends "emails/base_email.html" %}
+{% block content %}
+  <p>Dear {{ vendor_name }},</p>
+  <span class="badge badge-pending">Deadline Approaching</span>
+  <p>This is a reminder that the following RFQ is closing in <strong>{{ hours_left }} hours</strong>.</p>
+  <div class="info-box">
+    <p><strong>RFQ Number:</strong> {{ rfq_number }}</p>
+    <p><strong>Title:</strong> {{ rfq_title }}</p>
+    <p><strong>Deadline:</strong> {{ deadline }}</p>
+  </div>
+  <p>Please submit your bid before the deadline to be considered.</p>
+{% endblock %}
