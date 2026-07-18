@@ -267,3 +267,197 @@ def notify_vendor_invoice_paid(self, invoice_id):
     except Exception as exc:
         logger.error(f"notify_vendor_invoice_paid failed: {exc}")
         raise self.retry(exc=exc)
+
+
+# ─────────────────────────────────────────
+# SCHEDULED REMINDER TASKS (Day 33-34)
+# ─────────────────────────────────────────
+
+@shared_task
+def remind_pending_approvals():
+    """
+    Runs daily — reminds managers about purchase requests
+    pending approval for more than 2 days
+    """
+    from procurement.models import PurchaseRequest
+    from django.contrib.auth import get_user_model
+    from django.utils import timezone
+    from datetime import timedelta
+
+    User = get_user_model()
+    two_days_ago = timezone.now() - timedelta(days=2)
+
+    pending_requests = PurchaseRequest.objects.filter(
+        status='PENDING_APPROVAL',
+        created_at__lte=two_days_ago
+    ).select_related('requester', 'department')
+
+    if not pending_requests.exists():
+        logger.info("No overdue pending approvals found.")
+        return
+
+    for pr in pending_requests:
+        managers = User.objects.filter(
+            role='MANAGER',
+            department=pr.department,
+        ).exclude(email='')
+
+        for manager in managers:
+            days_pending = (timezone.now() - pr.created_at).days
+            send_email(
+                subject=f"[Reminder] Purchase Request pending approval for {days_pending} days",
+                template_name='reminder_pending_approval.html',
+                context={
+                    'manager_name': manager.get_full_name() or manager.username,
+                    'request_title': pr.title,
+                    'requester_name': pr.requester.get_full_name() or pr.requester.username,
+                    'days_pending': days_pending,
+                    'estimated_budget': pr.estimated_budget,
+                },
+                recipient_list=[manager.email]
+            )
+
+    logger.info(f"Pending approval reminders sent for {pending_requests.count()} requests.")
+
+
+@shared_task
+def remind_rfq_deadline_approaching():
+    """
+    Runs daily — reminds vendors about RFQs closing in 2 days
+    """
+    from procurement.models import RFQ
+    from django.utils import timezone
+    from datetime import timedelta
+
+    now = timezone.now()
+    two_days_later = now + timedelta(days=2)
+
+    closing_rfqs = RFQ.objects.filter(
+        status='OPEN',
+        deadline__gte=now,
+        deadline__lte=two_days_later
+    ).prefetch_related('invited_vendors__user')
+
+    for rfq in closing_rfqs:
+        for vendor in rfq.invited_vendors.all():
+            if not vendor.user.email:
+                continue
+
+            # Skip vendors who already bid
+            already_bid = rfq.bids.filter(vendor=vendor).exists()
+            if already_bid:
+                continue
+
+            hours_left = int((rfq.deadline - now).total_seconds() / 3600)
+
+            send_email(
+                subject=f"[Reminder] RFQ {rfq.rfq_number} closes in {hours_left} hours",
+                template_name='reminder_rfq_deadline.html',
+                context={
+                    'vendor_name': vendor.company_name,
+                    'rfq_number': rfq.rfq_number,
+                    'rfq_title': rfq.title,
+                    'deadline': rfq.deadline.strftime('%d %b %Y %H:%M'),
+                    'hours_left': hours_left,
+                },
+                recipient_list=[vendor.user.email]
+            )
+
+    logger.info(f"RFQ deadline reminders sent for {closing_rfqs.count()} RFQs.")
+
+
+@shared_task
+def remind_overdue_invoices():
+    """
+    Runs daily — reminds finance team about overdue invoices
+    """
+    from procurement.models import Invoice
+    from django.contrib.auth import get_user_model
+    from django.utils import timezone
+
+    User = get_user_model()
+    today = timezone.now().date()
+
+    overdue_invoices = Invoice.objects.filter(
+        due_date__lt=today,
+        status__in=['SUBMITTED', 'UNDER_REVIEW', 'APPROVED']
+    ).select_related('vendor', 'purchase_order')
+
+    if not overdue_invoices.exists():
+        logger.info("No overdue invoices found.")
+        return
+
+    finance_users = User.objects.filter(
+        role='FINANCE'
+    ).exclude(email='')
+
+    for finance_user in finance_users:
+        send_email(
+            subject=f"[Urgent] {overdue_invoices.count()} overdue invoice(s) require attention",
+            template_name='reminder_overdue_invoices.html',
+            context={
+                'finance_name': finance_user.get_full_name() or finance_user.username,
+                'overdue_count': overdue_invoices.count(),
+                'invoices': [
+                    {
+                        'invoice_number': inv.invoice_number,
+                        'vendor': inv.vendor.company_name,
+                        'amount': inv.amount,
+                        'due_date': inv.due_date.strftime('%d %b %Y'),
+                        'days_overdue': (today - inv.due_date).days,
+                        'status': inv.status,
+                    }
+                    for inv in overdue_invoices
+                ]
+            },
+            recipient_list=[finance_user.email]
+        )
+
+    logger.info(f"Overdue invoice reminders sent. Count: {overdue_invoices.count()}")
+
+
+@shared_task
+def remind_po_delivery_due():
+    """
+    Runs daily — reminds procurement about POs with delivery due tomorrow
+    """
+    from procurement.models import PurchaseOrder
+    from django.contrib.auth import get_user_model
+    from django.utils import timezone
+    from datetime import timedelta
+
+    User = get_user_model()
+    tomorrow = (timezone.now() + timedelta(days=1)).date()
+
+    due_pos = PurchaseOrder.objects.filter(
+        expected_delivery_date=tomorrow,
+        status__in=['SENT', 'ACKNOWLEDGED', 'IN_PROGRESS']
+    ).select_related('vendor')
+
+    if not due_pos.exists():
+        return
+
+    procurement_users = User.objects.filter(
+        role='PROCUREMENT'
+    ).exclude(email='')
+
+    for proc_user in procurement_users:
+        send_email(
+            subject=f"[Reminder] {due_pos.count()} PO(s) delivery due tomorrow",
+            template_name='reminder_po_delivery.html',
+            context={
+                'procurement_name': proc_user.get_full_name() or proc_user.username,
+                'pos': [
+                    {
+                        'po_number': po.po_number,
+                        'vendor': po.vendor.company_name,
+                        'amount': po.total_amount,
+                        'status': po.status,
+                    }
+                    for po in due_pos
+                ]
+            },
+            recipient_list=[proc_user.email]
+        )
+
+    logger.info(f"PO delivery reminders sent. Count: {due_pos.count()}")
