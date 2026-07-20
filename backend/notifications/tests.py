@@ -1,5 +1,5 @@
 from django.test import TestCase
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from accounts.models import Department
 from procurement.models import (
@@ -36,7 +36,7 @@ class NotificationTaskTest(TestCase):
             city='KTM', country='Nepal', status='ACTIVE'
         )
 
-    @patch('notifications.emails.send_email')
+    @patch('notifications.tasks.send_email')
     def test_notify_manager_new_request(self, mock_send):
         mock_send.return_value = True
 
@@ -60,7 +60,7 @@ class NotificationTaskTest(TestCase):
         self.assertIn('mgr1@test.com', call_args[1]['recipient_list'])
         self.assertIn('Action Required', call_args[1]['subject'])
 
-    @patch('notifications.emails.send_email')
+    @patch('notifications.tasks.send_email')
     def test_notify_requester_approved(self, mock_send):
         mock_send.return_value = True
 
@@ -87,7 +87,7 @@ class NotificationTaskTest(TestCase):
         self.assertIn('emp1@test.com', call_args[1]['recipient_list'])
         self.assertIn('Approved', call_args[1]['subject'])
 
-    @patch('notifications.emails.send_email')
+    @patch('notifications.tasks.send_email')
     def test_remind_pending_approvals(self, mock_send):
         mock_send.return_value = True
 
@@ -113,7 +113,7 @@ class NotificationTaskTest(TestCase):
         call_args = mock_send.call_args
         self.assertIn('mgr1@test.com', call_args[1]['recipient_list'])
 
-    @patch('notifications.emails.send_email')
+    @patch('notifications.tasks.send_email')
     def test_no_email_sent_when_no_pending(self, mock_send):
         from notifications.tasks import remind_pending_approvals
         remind_pending_approvals()
