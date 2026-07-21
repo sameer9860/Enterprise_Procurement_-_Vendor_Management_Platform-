@@ -16,9 +16,7 @@ from procurement.models import (
 )
 
 
-# ─────────────────────────────────────────
 # SPEND ANALYTICS
-# ─────────────────────────────────────────
 
 def get_total_spend_summary(start_date=None, end_date=None):
     """Overall spend summary across all paid invoices"""
@@ -110,9 +108,7 @@ def get_spend_by_category(start_date=None, end_date=None):
     ).exclude(category=None).order_by('-total_spend')
 
 
-# ─────────────────────────────────────────
 # VENDOR PERFORMANCE
-# ─────────────────────────────────────────
 
 def get_vendor_performance_summary(start_date=None, end_date=None):
     """Overall vendor performance metrics"""
@@ -196,9 +192,7 @@ def get_vendor_bid_comparison(rfq_id):
     }
 
 
-# ─────────────────────────────────────────
 # PROCUREMENT PIPELINE
-# ─────────────────────────────────────────
 
 def get_procurement_pipeline_summary():
     """Current state of all requests across the pipeline"""
@@ -272,9 +266,7 @@ def get_rfq_to_po_cycle_time():
     }
 
 
-# ─────────────────────────────────────────
 # INVOICE & PAYMENT ANALYTICS
-# ─────────────────────────────────────────
 
 def get_invoice_status_summary():
     """Invoice counts and values by status"""
