@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #222; padding: 30px; }
+    h1 { color: #1a5276; border-bottom: 3px solid #1a5276; padding-bottom: 8px; }
+    h2 { color: #1a5276; margin-top: 30px; font-size: 14px; }
+    .meta { color: #777; margin-bottom: 20px; font-size: 11px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 20px 0; }
+    .summary-card { background: #f8f9fa; border-left: 4px solid #1a5276; padding: 12px 16px; border-radius: 4px; }
+    .summary-card .label { font-size: 11px; color: #777; text-transform: uppercase; }
+    .summary-card .value { font-size: 18px; font-weight: bold; color: #1a5276; margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    thead { background: #1a5276; color: white; }
+    thead th { padding: 8px 10px; text-align: left; font-size: 11px; }
+    tbody tr:nth-child(even) { background: #f8f9fa; }
+    tbody td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+    .overdue { color: #922b21; font-weight: bold; }
+    .footer { margin-top: 40px; text-align: center; color: #aaa; font-size: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Procurement Spend Report</h1>
+  <div class="meta">
+    <p>Generated: {{ generated_at }} | Period: {{ period }}</p>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="label">Total Spend</div>
+      <div class="value">${{ summary.total_spend|floatformat:2 }}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Transactions</div>
+      <div class="value">{{ summary.total_transactions }}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Avg Transaction</div>
+      <div class="value">${{ summary.average_transaction|floatformat:2 }}</div>
+    </div>
+  </div>
+
+  <h2>Spend by Department</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Department</th>
+        <th>Total Spend</th>
+        <th>Transactions</th>
+        <th>Avg Spend</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for dept in dept_data %}
+      <tr>
+        <td>{{ dept.department_name }}</td>
+        <td>${{ dept.total_spend|floatformat:2 }}</td>
+        <td>{{ dept.transaction_count }}</td>
+        <td>${{ dept.average_spend|floatformat:2 }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4">No data available.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Monthly Spend Trend</h2>
+  <table>
+    <thead>
+      <tr><th>Month</th><th>Total Spend</th><th>Transactions</th></tr>
+    </thead>
+    <tbody>
+      {% for m in monthly_data %}
+      <tr>
+        <td>{{ m.month|date:"F Y" }}</td>
+        <td>${{ m.total_spend|floatformat:2 }}</td>
+        <td>{{ m.transaction_count }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3">No data available.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if overdue %}
+  <h2 class="overdue">Overdue Invoices ({{ overdue|length }})</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Invoice</th><th>Vendor</th>
+        <th>Amount</th><th>Due Date</th>
+        <th>Days Overdue</th><th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for inv in overdue %}
+      <tr>
+        <td>{{ inv.invoice_number }}</td>
+        <td>{{ inv.vendor }}</td>
+        <td>${{ inv.amount }}</td>
+        <td>{{ inv.due_date }}</td>
+        <td class="overdue">{{ inv.days_overdue }}</td>
+        <td>{{ inv.status }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <div class="footer">
+    <p>Procurement Platform — Confidential Report — {{ generated_at }}</p>
+  </div>
+</body>
+</html>
