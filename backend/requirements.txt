@@ -33,3 +33,6 @@ redis==5.0.4
 django-celery-beat==2.6.0
 django-celery-results==2.5.1
 flower==2.0.1
+# Report Generation (Phase 7 - Day 38)
+openpyxl==3.1.2
+xlsxwriter==3.2.0
