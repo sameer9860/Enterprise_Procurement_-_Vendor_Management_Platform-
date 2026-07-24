@@ -10,6 +10,11 @@ from .views import (
     ProcurementPipelineView,
     InvoiceReportView,
     OverdueInvoicesView,
+    RequestSpendReportView,
+    DownloadSpendReportView,
+    DownloadVendorReportView,
+    DownloadSpendPDFView,
+    TaskStatusView,
 )
 
 urlpatterns = [
@@ -30,4 +35,15 @@ urlpatterns = [
     # Invoice reports
     path('invoices/', InvoiceReportView.as_view(), name='invoice-report'),
     path('invoices/overdue/', OverdueInvoicesView.as_view(), name='overdue-invoices'),
+
+    # Report downloads
+    path('download/spend/excel/', DownloadSpendReportView.as_view(), name='download-spend-excel'),
+    path('download/spend/pdf/', DownloadSpendPDFView.as_view(), name='download-spend-pdf'),
+    path('download/vendors/excel/', DownloadVendorReportView.as_view(), name='download-vendor-excel'),
+
+    # Async report generation
+    path('generate/spend/', RequestSpendReportView.as_view(), name='generate-spend-report'),
+
+    # Task status
+    path('tasks/<str:task_id>/', TaskStatusView.as_view(), name='task-status'),
 ]
