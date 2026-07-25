@@ -15,6 +15,7 @@ from .views import (
     DownloadVendorReportView,
     DownloadSpendPDFView,
     TaskStatusView,
+    DashboardView,
 )
 
 urlpatterns = [
@@ -46,4 +47,7 @@ urlpatterns = [
 
     # Task status
     path('tasks/<str:task_id>/', TaskStatusView.as_view(), name='task-status'),
+
+    # Dashboard
+    path('dashboard/', DashboardView.as_view(), name='dashboard'),
 ]
