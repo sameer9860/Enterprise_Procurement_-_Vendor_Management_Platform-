@@ -30,6 +30,9 @@ from .report_generators import (
     generate_spend_pdf_report,
 )
 
+from .dashboard import get_dashboard_data
+
+
 
 class SpendSummaryView(APIView):
     permission_classes = [IsFinance]
@@ -286,4 +289,13 @@ class TaskStatusView(APIView):
             'status': result.status,
             'result': result.result if result.ready() else None
         })
+
+
+
+class DashboardView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        data = get_dashboard_data(request.user)
+        return Response(data)        
 
