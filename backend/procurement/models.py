@@ -29,6 +29,9 @@ class PurchaseRequest(models.Model):
         indexes = [
             models.Index(fields=['status']),
             models.Index(fields=['requester', 'status']),
+            models.Index(fields=['department', 'status']),
+            models.Index(fields=['created_at']),
+            models.Index(fields=['status', 'created_at']),
         ]
 
     def __str__(self):
@@ -81,6 +84,7 @@ class PurchaseOrder(models.Model):
         indexes = [
             models.Index(fields=['status']),
             models.Index(fields=['vendor', 'status']),
+            models.Index(fields=['expected_delivery_date', 'status']),
         ]
 
     def __str__(self):
@@ -283,6 +287,10 @@ class Bid(models.Model):
     class Meta:
         unique_together = ['rfq', 'vendor']
         ordering = ['total_amount']
+        indexes = [
+            models.Index(fields=['rfq', 'status']),
+            models.Index(fields=['vendor', 'status']),
+        ]
 
     def __str__(self):
         return f"{self.rfq.rfq_number} - {self.vendor.company_name} - ${self.total_amount}"
@@ -366,6 +374,8 @@ class Invoice(models.Model):
             models.Index(fields=['status']),
             models.Index(fields=['vendor', 'status']),
             models.Index(fields=['purchase_order', 'status']),
+            models.Index(fields=['due_date', 'status']),
+            models.Index(fields=['submitted_at']),
         ]
 
     def __str__(self):
