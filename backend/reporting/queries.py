@@ -28,11 +28,11 @@ def get_total_spend_summary(start_date=None, end_date=None):
         qs = qs.filter(payment_date__lte=end_date)
 
     stats = qs.aggregate(
-        total_spend=Coalesce(Sum('amount_paid'), 0),
+        total_spend=Coalesce(Sum('amount_paid'), 0, output_field=DecimalField()),
         total_transactions=Count('id'),
-        average_transaction=Coalesce(Avg('amount_paid'), 0),
-        largest_payment=Coalesce(Max('amount_paid'), 0),
-        smallest_payment=Coalesce(Min('amount_paid'), 0),
+        average_transaction=Coalesce(Avg('amount_paid'), 0, output_field=DecimalField()),
+        largest_payment=Coalesce(Max('amount_paid'), 0, output_field=DecimalField()),
+        smallest_payment=Coalesce(Min('amount_paid'), 0, output_field=DecimalField()),
     )
     return stats
 
@@ -111,9 +111,15 @@ def get_spend_by_category(start_date=None, end_date=None):
 # VENDOR PERFORMANCE
 
 def get_vendor_performance_summary(start_date=None, end_date=None):
-    """Overall vendor performance metrics"""
+    """Overall vendor performance metrics (Optimized with prefetch)"""
+    from django.db.models import Prefetch
+    from procurement.models import Bid, PurchaseOrder, Invoice
+
     qs = Vendor.objects.filter(status='ACTIVE').prefetch_related(
-        'bids', 'purchase_orders', 'invoices'
+        Prefetch('bids', queryset=Bid.objects.all()),
+        Prefetch('purchase_orders', queryset=PurchaseOrder.objects.all()),
+        Prefetch('invoices', queryset=Invoice.objects.all()),
+        'categories'
     )
 
     result = []
@@ -136,7 +142,7 @@ def get_vendor_performance_summary(start_date=None, end_date=None):
         on_time_rate = round((delivered_pos / total_pos * 100), 2) if total_pos > 0 else 0
 
         total_invoiced = invoices.aggregate(
-            total=Coalesce(Sum('amount'), 0)
+            total=Coalesce(Sum('amount'), 0, output_field=DecimalField())
         )['total']
 
         result.append({
