@@ -2,14 +2,22 @@ from rest_framework import generics, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import UserSerializer, UserProfileSerializer
+from .throttles import LoginRateThrottle, RegisterRateThrottle
 
 User = get_user_model()
+
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [RegisterRateThrottle]
+
+
+class ThrottledTokenObtainPairView(TokenObtainPairView):
+    throttle_classes = [LoginRateThrottle]
 
 
 class ProfileView(APIView):
