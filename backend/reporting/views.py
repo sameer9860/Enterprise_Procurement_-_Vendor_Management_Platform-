@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions
 from accounts.permissions import IsFinance, IsProcurement, IsAdmin
+from accounts.throttles import ReportDownloadThrottle
 from .queries import (
     get_total_spend_summary,
     get_spend_by_department,
@@ -220,6 +221,7 @@ class RequestSpendReportView(APIView):
 class DownloadSpendReportView(APIView):
     """Instant Excel download (sync — for small datasets)"""
     permission_classes = [IsFinance]
+    throttle_classes = [ReportDownloadThrottle]
 
     def get(self, request):
         serializer = DateRangeSerializer(data=request.query_params)
@@ -241,6 +243,7 @@ class DownloadSpendReportView(APIView):
 class DownloadVendorReportView(APIView):
     """Instant vendor performance Excel download"""
     permission_classes = [IsProcurement]
+    throttle_classes = [ReportDownloadThrottle]
 
     def get(self, request):
         serializer = DateRangeSerializer(data=request.query_params)
@@ -262,6 +265,7 @@ class DownloadVendorReportView(APIView):
 class DownloadSpendPDFView(APIView):
     """Instant PDF spend report download"""
     permission_classes = [IsFinance]
+    throttle_classes = [ReportDownloadThrottle]
 
     def get(self, request):
         serializer = DateRangeSerializer(data=request.query_params)
