@@ -10,6 +10,7 @@ from .filters import PurchaseRequestFilter, PurchaseOrderFilter, InvoiceFilter
 from .pagination import StandardResultsPagination
 from accounts.mixins import RoleRequiredMixin
 from accounts.permissions import IsManagerOrAdmin
+from accounts.throttles import VendorBidThrottle
 from audit.utils import log_action
 from django.http import HttpResponse
 from .pdf_utils import generate_po_pdf, save_po_pdf_locally
@@ -418,6 +419,11 @@ class RFQViewSet(viewsets.ModelViewSet):
 class BidViewSet(viewsets.ModelViewSet):
     queryset = Bid.objects.select_related('rfq', 'vendor').prefetch_related('items')
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_throttles(self):
+        if self.action == 'create':
+            return [VendorBidThrottle()]
+        return super().get_throttles()
 
     def get_serializer_class(self):
         if self.action == 'list':
