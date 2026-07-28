@@ -8,6 +8,7 @@ from .models import PurchaseRequest, Approval
 from .serializers import PurchaseRequestSerializer, PurchaseRequestListSerializer, ApprovalSerializer, ApprovalActionSerializer,VendorDocumentSerializer
 from .filters import PurchaseRequestFilter, PurchaseOrderFilter, InvoiceFilter
 from .pagination import StandardResultsPagination
+from accounts.validators import validate_file_size, validate_file_extension
 from accounts.mixins import RoleRequiredMixin
 from accounts.permissions import IsManagerOrAdmin
 from accounts.throttles import VendorBidThrottle
@@ -264,6 +265,15 @@ class VendorViewSet(viewsets.ModelViewSet):
 
         if not document_type or not file_obj:
             return Response({"error": "document_type and file are required."}, status=400)
+
+        try:
+            validate_file_size(file_obj, max_mb=5)
+            validate_file_extension(
+                file_obj,
+                allowed_extensions=['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx']
+            )
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
         storage_path = upload_vendor_document_to_supabase(file_obj, vendor.id, document_type)
         if not storage_path:
@@ -1047,13 +1057,12 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         if not file:
             return Response({"error": "No file provided."}, status=400)
 
-        # Validate file type
-        allowed_types = ['application/pdf', 'image/jpeg', 'image/png']
-        if file.content_type not in allowed_types:
-            return Response(
-                {"error": "Only PDF, JPEG, and PNG files are allowed."},
-                status=400
-            )
+        # Validate file size (max 10MB) and allowed extensions
+        try:
+            validate_file_size(file, max_mb=10)
+            validate_file_extension(file, allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
         from django.conf import settings as django_settings
         if getattr(django_settings, 'USE_SUPABASE', False):

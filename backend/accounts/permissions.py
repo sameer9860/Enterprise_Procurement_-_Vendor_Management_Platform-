@@ -40,8 +40,58 @@ class IsOwnerOrManager(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.user.role == 'ADMIN':
             return True
-        if obj.requester == request.user:
+        if hasattr(obj, 'requester') and obj.requester == request.user:
             return True
-        if request.user.role == 'MANAGER' and obj.requester.department == request.user.department:
+        if request.user.role == 'MANAGER' and hasattr(obj, 'requester') and obj.requester.department == request.user.department:
             return True
+        return False
+
+
+class IsOwnerOrReadOnly(permissions.BasePermission):
+    """
+    Object level — owner can edit, others can only read.
+    """
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        if hasattr(obj, 'requester'):
+            return obj.requester == request.user
+        if hasattr(obj, 'user'):
+            return obj.user == request.user
+        return False
+
+
+class IsSameVendor(permissions.BasePermission):
+    """
+    Vendor can only access their own profile and related objects.
+    """
+    def has_object_permission(self, request, view, obj):
+        if request.user.role != 'VENDOR':
+            return True
+        try:
+            vendor_profile = request.user.vendor_profile
+            if hasattr(obj, 'vendor'):
+                return obj.vendor == vendor_profile
+            if hasattr(obj, 'user'):
+                return obj.user == request.user
+        except Exception:
+            return False
+        return False
+
+
+class CanAccessDepartmentData(permissions.BasePermission):
+    """
+    Manager can only access data from their own department.
+    """
+    def has_object_permission(self, request, view, obj):
+        if request.user.role in ['ADMIN', 'PROCUREMENT', 'FINANCE']:
+            return True
+        if request.user.role == 'MANAGER':
+            if hasattr(obj, 'department'):
+                return obj.department == request.user.department
+            if hasattr(obj, 'purchase_request'):
+                return obj.purchase_request.department == request.user.department
+        if request.user.role == 'EMPLOYEE':
+            if hasattr(obj, 'requester'):
+                return obj.requester == request.user
         return False
