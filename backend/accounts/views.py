@@ -33,3 +33,33 @@ class ProfileView(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
+
+
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
+
+class LogoutView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        refresh_token = request.data.get('refresh')
+
+        if not refresh_token:
+            return Response(
+                {"error": "Refresh token is required."},
+                status=400
+            )
+
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response(
+                {"message": "Logged out successfully."},
+                status=200
+            )
+        except TokenError as e:
+            return Response(
+                {"error": f"Invalid token: {str(e)}"},
+                status=400
+            )
+
