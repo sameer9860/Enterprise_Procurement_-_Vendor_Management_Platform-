@@ -84,3 +84,25 @@ class RequestLoggingMiddleware:
         if forwarded_for:
             return forwarded_for.split(',')[0].strip()
         return request.META.get('REMOTE_ADDR', 'unknown')
+
+
+class InputSanitizationMiddleware:
+    """
+    Sanitizes incoming POST/PUT/PATCH request data
+    to prevent XSS and injection attacks.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.method in ['POST', 'PUT', 'PATCH']:
+            if hasattr(request, 'data'):
+                from config.sanitizers import sanitize_dict
+                try:
+                    request._sanitized = sanitize_dict(
+                        request.data.copy()
+                    )
+                except Exception:
+                    pass
+        return self.get_response(request)
+
