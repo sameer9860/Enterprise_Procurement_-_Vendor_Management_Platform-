@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'django_celery_results',
     'notifications',
     'reporting',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -172,7 +173,8 @@ REST_FRAMEWORK = {
         'vendor_bid': '10/hour',
         'report_download': '20/hour',
         'password_reset': '3/hour',
-    }
+    },
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 if 'test' in sys.argv:
@@ -326,3 +328,50 @@ if DEBUG:
         INTERNAL_IPS = ['127.0.0.1']
     except ImportError:
         pass
+
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Enterprise Procurement & Vendor Management API',
+    'DESCRIPTION': '''
+## Overview
+A centralized procurement workflow platform that digitalizes purchasing for organizations.
+
+## Authentication
+This API uses JWT Bearer token authentication.
+1. Register at `/api/auth/register/`
+2. Login at `/api/auth/login/` to get access + refresh tokens
+3. Include token in header: `Authorization: Bearer <access_token>`
+4. Refresh token at `/api/auth/login/refresh/`
+5. Logout at `/api/auth/logout/`
+
+## User Roles
+| Role | Description |
+|------|-------------|
+| EMPLOYEE | Creates purchase requests |
+| MANAGER | Approves/rejects requests |
+| PROCUREMENT | Manages RFQs, POs, vendor relationships |
+| FINANCE | Reviews invoices and records payments |
+| VENDOR | Submits bids, acknowledges POs, submits invoices |
+| ADMIN | Full system access |
+
+## Procurement Workflow
+```
+Request → Approval → RFQ → Bidding → PO → Invoice → Payment
+```
+    ''',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SORT_OPERATIONS': False,
+    'TAGS': [
+        {'name': 'Auth', 'description': 'Authentication and user management'},
+        {'name': 'Purchase Requests', 'description': 'Create and manage purchase requests'},
+        {'name': 'Vendors', 'description': 'Vendor onboarding and management'},
+        {'name': 'RFQs', 'description': 'Request for Quotation management'},
+        {'name': 'Bids', 'description': 'Vendor bid submission and comparison'},
+        {'name': 'Purchase Orders', 'description': 'PO generation and tracking'},
+        {'name': 'Invoices', 'description': 'Invoice submission and payment'},
+        {'name': 'Reports', 'description': 'Analytics and reporting'},
+        {'name': 'Audit', 'description': 'Audit trail and activity logs'},
+    ],
+}
