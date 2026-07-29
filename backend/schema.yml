@@ -1,0 +1,4414 @@
+openapi: 3.0.3
+info:
+  title: Enterprise Procurement & Vendor Management API
+  version: 1.0.0
+  description: "\n## Overview\nA centralized procurement workflow platform that digitalizes\
+    \ purchasing for organizations.\n\n## Authentication\nThis API uses JWT Bearer\
+    \ token authentication.\n1. Register at `/api/auth/register/`\n2. Login at `/api/auth/login/`\
+    \ to get access + refresh tokens\n3. Include token in header: `Authorization:\
+    \ Bearer <access_token>`\n4. Refresh token at `/api/auth/login/refresh/`\n5. Logout\
+    \ at `/api/auth/logout/`\n\n## User Roles\n| Role | Description |\n|------|-------------|\n\
+    | EMPLOYEE | Creates purchase requests |\n| MANAGER | Approves/rejects requests\
+    \ |\n| PROCUREMENT | Manages RFQs, POs, vendor relationships |\n| FINANCE | Reviews\
+    \ invoices and records payments |\n| VENDOR | Submits bids, acknowledges POs,\
+    \ submits invoices |\n| ADMIN | Full system access |\n\n## Procurement Workflow\n\
+    ```\nRequest → Approval → RFQ → Bidding → PO → Invoice → Payment\n```\n    "
+paths:
+  /api/auth/register/:
+    post:
+      operationId: auth_register_create
+      description: Create a new user account with a specific role.
+      summary: Register new user
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/auth/login/:
+    post:
+      operationId: auth_login_create
+      description: Authenticate with username and password to receive access and refresh
+        tokens.
+      summary: Obtain JWT token pair
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/auth/login/refresh/:
+    post:
+      operationId: auth_login_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      description: Blacklist the refresh token to logout.
+      summary: Logout user
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/auth/profile/:
+    get:
+      operationId: auth_profile_retrieve
+      summary: Get current user profile
+      tags:
+      - Auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+    patch:
+      operationId: auth_profile_partial_update
+      summary: Update user profile
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+  /api/procurement/requests/:
+    post:
+      operationId: procurement_requests_create
+      description: Employee creates a new purchase request with items.
+      summary: Create purchase request
+      tags:
+      - Purchase Requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseRequestRequest'
+            examples:
+              ExampleRequest:
+                value:
+                  title: 50 Dell Laptops
+                  description: For new engineering hires
+                  estimated_budget: 50000
+                  items:
+                  - item_name: Dell Latitude 5440
+                    quantity: 50
+                    estimated_unit_price: 1000
+                    specifications: 16GB RAM, i7, 512GB SSD
+                summary: Example Request
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseRequest'
+              examples:
+                ExampleRequest:
+                  value:
+                    title: 50 Dell Laptops
+                    description: For new engineering hires
+                    estimated_budget: 50000
+                    items:
+                    - item_name: Dell Latitude 5440
+                      quantity: 50
+                      estimated_unit_price: 1000
+                      specifications: 16GB RAM, i7, 512GB SSD
+                  summary: Example Request
+          description: ''
+    get:
+      operationId: procurement_requests_list
+      description: Returns purchase requests filtered by user role. Employees see
+        only their own, managers see their department.
+      summary: List purchase requests
+      parameters:
+      - in: query
+        name: created_after
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: created_before
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: department
+        schema:
+          type: integer
+      - in: query
+        name: max_budget
+        schema:
+          type: number
+      - in: query
+        name: min_budget
+        schema:
+          type: number
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: page
+        schema:
+          type: integer
+        description: Page number
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search by title
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: Filter by status
+      tags:
+      - Purchase Requests
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPurchaseRequestListList'
+          description: ''
+  /api/procurement/requests/{id}/:
+    put:
+      operationId: procurement_requests_update
+      summary: Update purchase request
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this purchase request.
+        required: true
+      tags:
+      - Purchase Requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseRequest'
+          description: ''
+    get:
+      operationId: procurement_requests_retrieve
+      summary: Get purchase request detail
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this purchase request.
+        required: true
+      tags:
+      - Purchase Requests
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseRequest'
+          description: ''
+    patch:
+      operationId: procurement_requests_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this purchase request.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseRequestRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseRequest'
+          description: ''
+    delete:
+      operationId: procurement_requests_destroy
+      summary: Delete purchase request
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this purchase request.
+        required: true
+      tags:
+      - Purchase Requests
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/procurement/requests/{id}/approval_history/:
+    get:
+      operationId: procurement_requests_approval_history_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this purchase request.
+        required: true
+      tags:
+      - procurement
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseRequest'
+          description: ''
+  /api/procurement/requests/{id}/approve_action/:
+    post:
+      operationId: procurement_requests_approve_action_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this purchase request.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseRequest'
+          description: ''
+  /api/procurement/requests/{id}/resubmit/:
+    post:
+      operationId: procurement_requests_resubmit_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this purchase request.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseRequest'
+          description: ''
+  /api/procurement/vendors/:
+    post:
+      operationId: procurement_vendors_create
+      summary: Create vendor profile
+      tags:
+      - Vendors
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VendorRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VendorRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vendor'
+          description: ''
+    get:
+      operationId: procurement_vendors_list
+      summary: List vendors
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Vendors
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedVendorListList'
+          description: ''
+  /api/procurement/vendors/active_vendors/:
+    get:
+      operationId: procurement_vendors_active_vendors_retrieve
+      description: Quick endpoint to get all active vendors for RFQ invitations
+      tags:
+      - procurement
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vendor'
+          description: ''
+  /api/procurement/vendors/{id}/:
+    put:
+      operationId: procurement_vendors_update
+      summary: Update vendor profile
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this vendor.
+        required: true
+      tags:
+      - Vendors
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VendorRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VendorRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vendor'
+          description: ''
+    get:
+      operationId: procurement_vendors_retrieve
+      summary: Get vendor detail
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this vendor.
+        required: true
+      tags:
+      - Vendors
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vendor'
+          description: ''
+    patch:
+      operationId: procurement_vendors_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this vendor.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedVendorRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedVendorRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedVendorRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vendor'
+          description: ''
+    delete:
+      operationId: procurement_vendors_destroy
+      summary: Delete vendor profile
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this vendor.
+        required: true
+      tags:
+      - Vendors
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/procurement/vendors/{id}/upload_document/:
+    post:
+      operationId: procurement_vendors_upload_document_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this vendor.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VendorRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VendorRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vendor'
+          description: ''
+  /api/procurement/vendors/{id}/verify_vendor/:
+    post:
+      operationId: procurement_vendors_verify_vendor_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this vendor.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VendorRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VendorRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vendor'
+          description: ''
+  /api/procurement/vendor-categories/:
+    post:
+      operationId: procurement_vendor_categories_create
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VendorCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VendorCategoryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorCategory'
+          description: ''
+    get:
+      operationId: procurement_vendor_categories_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - procurement
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedVendorCategoryList'
+          description: ''
+  /api/procurement/vendor-categories/{id}/:
+    put:
+      operationId: procurement_vendor_categories_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this vendor category.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VendorCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VendorCategoryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorCategory'
+          description: ''
+    get:
+      operationId: procurement_vendor_categories_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this vendor category.
+        required: true
+      tags:
+      - procurement
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorCategory'
+          description: ''
+    patch:
+      operationId: procurement_vendor_categories_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this vendor category.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedVendorCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedVendorCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedVendorCategoryRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorCategory'
+          description: ''
+    delete:
+      operationId: procurement_vendor_categories_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this vendor category.
+        required: true
+      tags:
+      - procurement
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/procurement/rfqs/:
+    post:
+      operationId: procurement_rfqs_create
+      summary: Create RFQ
+      tags:
+      - RFQs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RFQRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RFQRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RFQRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RFQ'
+          description: ''
+    get:
+      operationId: procurement_rfqs_list
+      summary: List RFQs
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - RFQs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRFQListList'
+          description: ''
+  /api/procurement/rfqs/create_from_request/:
+    post:
+      operationId: procurement_rfqs_create_from_request_create
+      description: Create RFQ from an approved PurchaseRequest
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RFQRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RFQRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RFQRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RFQ'
+          description: ''
+  /api/procurement/rfqs/{id}/:
+    put:
+      operationId: procurement_rfqs_update
+      summary: Update RFQ
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rfq.
+        required: true
+      tags:
+      - RFQs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RFQRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RFQRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RFQRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RFQ'
+          description: ''
+    get:
+      operationId: procurement_rfqs_retrieve
+      summary: Get RFQ detail
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rfq.
+        required: true
+      tags:
+      - RFQs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RFQ'
+          description: ''
+    patch:
+      operationId: procurement_rfqs_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rfq.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRFQRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRFQRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRFQRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RFQ'
+          description: ''
+    delete:
+      operationId: procurement_rfqs_destroy
+      summary: Delete RFQ
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rfq.
+        required: true
+      tags:
+      - RFQs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/procurement/rfqs/{id}/awarded_bid/:
+    get:
+      operationId: procurement_rfqs_awarded_bid_retrieve
+      description: Return the awarded bid for this RFQ, if any.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rfq.
+        required: true
+      tags:
+      - procurement
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RFQ'
+          description: ''
+  /api/procurement/rfqs/{id}/close_rfq/:
+    post:
+      operationId: procurement_rfqs_close_rfq_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rfq.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RFQRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RFQRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RFQRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RFQ'
+          description: ''
+  /api/procurement/bids/:
+    post:
+      operationId: procurement_bids_create
+      summary: Submit a bid
+      tags:
+      - Bids
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BidRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BidRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BidRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bid'
+          description: ''
+    get:
+      operationId: procurement_bids_list
+      summary: List bids
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Bids
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBidListList'
+          description: ''
+  /api/procurement/bids/compare/:
+    get:
+      operationId: procurement_bids_compare_retrieve
+      description: Bid comparison dashboard for an RFQ.
+      tags:
+      - procurement
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bid'
+          description: ''
+  /api/procurement/bids/{id}/:
+    put:
+      operationId: procurement_bids_update
+      summary: Update bid
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bid.
+        required: true
+      tags:
+      - Bids
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BidRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BidRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BidRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bid'
+          description: ''
+    get:
+      operationId: procurement_bids_retrieve
+      summary: Get bid detail
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bid.
+        required: true
+      tags:
+      - Bids
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bid'
+          description: ''
+    patch:
+      operationId: procurement_bids_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bid.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBidRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBidRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBidRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bid'
+          description: ''
+    delete:
+      operationId: procurement_bids_destroy
+      summary: Delete bid
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bid.
+        required: true
+      tags:
+      - Bids
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/procurement/bids/{id}/award_bid/:
+    post:
+      operationId: procurement_bids_award_bid_create
+      description: Award a bid — atomically rejects all others and advances the procurement
+        flow.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bid.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BidRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BidRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BidRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bid'
+          description: ''
+  /api/procurement/bids/{id}/reject_bid/:
+    post:
+      operationId: procurement_bids_reject_bid_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bid.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BidRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BidRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BidRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bid'
+          description: ''
+  /api/procurement/bids/{id}/shortlist/:
+    post:
+      operationId: procurement_bids_shortlist_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bid.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BidRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BidRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BidRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bid'
+          description: ''
+  /api/procurement/purchase-orders/:
+    post:
+      operationId: procurement_purchase_orders_create
+      summary: Create purchase order
+      tags:
+      - Purchase Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+          description: ''
+    get:
+      operationId: procurement_purchase_orders_list
+      summary: List purchase orders
+      parameters:
+      - in: query
+        name: created_after
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: created_before
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: expected_before
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: max_amount
+        schema:
+          type: number
+      - in: query
+        name: min_amount
+        schema:
+          type: number
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ACKNOWLEDGED
+          - CANCELLED
+          - DELIVERED
+          - DRAFT
+          - IN_PROGRESS
+          - SENT
+        description: |-
+          * `DRAFT` - Draft
+          * `SENT` - Sent to Vendor
+          * `ACKNOWLEDGED` - Acknowledged by Vendor
+          * `IN_PROGRESS` - In Progress
+          * `DELIVERED` - Delivered
+          * `CANCELLED` - Cancelled
+      - in: query
+        name: vendor
+        schema:
+          type: integer
+      tags:
+      - Purchase Orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPurchaseOrderListList'
+          description: ''
+  /api/procurement/purchase-orders/generate_po/:
+    post:
+      operationId: procurement_purchase_orders_generate_po_create
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+          description: ''
+  /api/procurement/purchase-orders/summary/:
+    get:
+      operationId: procurement_purchase_orders_summary_retrieve
+      description: Aggregated summary statistics for all Purchase Orders.
+      tags:
+      - procurement
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+          description: ''
+  /api/procurement/purchase-orders/{id}/:
+    put:
+      operationId: procurement_purchase_orders_update
+      summary: Update purchase order
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this purchase order.
+        required: true
+      tags:
+      - Purchase Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+          description: ''
+    get:
+      operationId: procurement_purchase_orders_retrieve
+      summary: Get PO detail
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this purchase order.
+        required: true
+      tags:
+      - Purchase Orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+          description: ''
+    patch:
+      operationId: procurement_purchase_orders_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this purchase order.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseOrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseOrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseOrderRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+          description: ''
+    delete:
+      operationId: procurement_purchase_orders_destroy
+      summary: Delete purchase order
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this purchase order.
+        required: true
+      tags:
+      - Purchase Orders
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/procurement/purchase-orders/{id}/acknowledge/:
+    post:
+      operationId: procurement_purchase_orders_acknowledge_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this purchase order.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+          description: ''
+  /api/procurement/purchase-orders/{id}/download_pdf/:
+    get:
+      operationId: procurement_purchase_orders_download_pdf_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this purchase order.
+        required: true
+      tags:
+      - procurement
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+          description: ''
+  /api/procurement/purchase-orders/{id}/generate_pdf_and_save/:
+    post:
+      operationId: procurement_purchase_orders_generate_pdf_and_save_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this purchase order.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+          description: ''
+  /api/procurement/purchase-orders/{id}/get_pdf_url/:
+    get:
+      operationId: procurement_purchase_orders_get_pdf_url_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this purchase order.
+        required: true
+      tags:
+      - procurement
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+          description: ''
+  /api/procurement/purchase-orders/{id}/send_to_vendor/:
+    post:
+      operationId: procurement_purchase_orders_send_to_vendor_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this purchase order.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+          description: ''
+  /api/procurement/purchase-orders/{id}/timeline/:
+    get:
+      operationId: procurement_purchase_orders_timeline_retrieve
+      description: Full status timeline for a PO from creation to delivery.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this purchase order.
+        required: true
+      tags:
+      - procurement
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+          description: ''
+  /api/procurement/purchase-orders/{id}/update_status/:
+    post:
+      operationId: procurement_purchase_orders_update_status_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this purchase order.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+          description: ''
+  /api/procurement/invoices/:
+    post:
+      operationId: procurement_invoices_create
+      summary: Create invoice
+      tags:
+      - Invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+    get:
+      operationId: procurement_invoices_list
+      summary: List invoices
+      parameters:
+      - in: query
+        name: due_after
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: due_before
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: max_amount
+        schema:
+          type: number
+      - in: query
+        name: min_amount
+        schema:
+          type: number
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: overdue
+        schema:
+          type: boolean
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - APPROVED
+          - PAID
+          - REJECTED
+          - SUBMITTED
+          - UNDER_REVIEW
+        description: |-
+          * `SUBMITTED` - Submitted
+          * `UNDER_REVIEW` - Under Review
+          * `APPROVED` - Approved
+          * `REJECTED` - Rejected
+          * `PAID` - Paid
+      - in: query
+        name: submitted_after
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: vendor
+        schema:
+          type: integer
+      tags:
+      - Invoices
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInvoiceListList'
+          description: ''
+  /api/procurement/invoices/submit_invoice/:
+    post:
+      operationId: procurement_invoices_submit_invoice_create
+      description: Vendor submits an invoice for a PO
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+  /api/procurement/invoices/summary/:
+    get:
+      operationId: procurement_invoices_summary_retrieve
+      description: Finance-only summary statistics for all invoices.
+      tags:
+      - procurement
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+  /api/procurement/invoices/{id}/:
+    put:
+      operationId: procurement_invoices_update
+      summary: Update invoice
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invoice.
+        required: true
+      tags:
+      - Invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+    get:
+      operationId: procurement_invoices_retrieve
+      summary: Get invoice detail
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invoice.
+        required: true
+      tags:
+      - Invoices
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+    patch:
+      operationId: procurement_invoices_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invoice.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedInvoiceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedInvoiceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedInvoiceRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+    delete:
+      operationId: procurement_invoices_destroy
+      summary: Delete invoice
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invoice.
+        required: true
+      tags:
+      - Invoices
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/procurement/invoices/{id}/get_invoice_file_url/:
+    get:
+      operationId: procurement_invoices_get_invoice_file_url_retrieve
+      description: Get signed URL to download invoice file
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invoice.
+        required: true
+      tags:
+      - procurement
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+  /api/procurement/invoices/{id}/mark_under_review/:
+    post:
+      operationId: procurement_invoices_mark_under_review_create
+      description: Finance marks invoice as under review
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invoice.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+  /api/procurement/invoices/{id}/record_payment/:
+    post:
+      operationId: procurement_invoices_record_payment_create
+      description: Finance records payment for approved invoice
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invoice.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+  /api/procurement/invoices/{id}/review_invoice/:
+    post:
+      operationId: procurement_invoices_review_invoice_create
+      description: Finance approves or rejects invoice
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invoice.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+  /api/procurement/invoices/{id}/timeline/:
+    get:
+      operationId: procurement_invoices_timeline_retrieve
+      description: Return the full audit-log timeline for an invoice.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invoice.
+        required: true
+      tags:
+      - procurement
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+  /api/procurement/invoices/{id}/upload_invoice_file/:
+    post:
+      operationId: procurement_invoices_upload_invoice_file_create
+      description: Vendor uploads the actual invoice PDF file
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invoice.
+        required: true
+      tags:
+      - procurement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InvoiceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+  /api/audit/logs/:
+    get:
+      operationId: audit_logs_list
+      parameters:
+      - in: query
+        name: action
+        schema:
+          type: string
+      - in: query
+        name: model_name
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: user
+        schema:
+          type: integer
+      tags:
+      - audit
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditLogList'
+          description: ''
+  /api/audit/logs/{id}/:
+    get:
+      operationId: audit_logs_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this audit log.
+        required: true
+      tags:
+      - audit
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLog'
+          description: ''
+  /api/reports/spend/summary/:
+    get:
+      operationId: reports_spend_summary_retrieve
+      summary: Spend summary
+      parameters:
+      - in: query
+        name: end_date
+        schema:
+          type: string
+          format: date
+        description: End date (YYYY-MM-DD)
+      - in: query
+        name: start_date
+        schema:
+          type: string
+          format: date
+        description: Start date (YYYY-MM-DD)
+      tags:
+      - Reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/reports/spend/by-department/:
+    get:
+      operationId: reports_spend_by_department_retrieve
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reports/spend/by-month/:
+    get:
+      operationId: reports_spend_by_month_retrieve
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reports/spend/by-quarter/:
+    get:
+      operationId: reports_spend_by_quarter_retrieve
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reports/spend/by-category/:
+    get:
+      operationId: reports_spend_by_category_retrieve
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reports/vendors/performance/:
+    get:
+      operationId: reports_vendors_performance_retrieve
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reports/vendors/bid-comparison/:
+    get:
+      operationId: reports_vendors_bid_comparison_retrieve
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reports/pipeline/:
+    get:
+      operationId: reports_pipeline_retrieve
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reports/invoices/:
+    get:
+      operationId: reports_invoices_retrieve
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reports/invoices/overdue/:
+    get:
+      operationId: reports_invoices_overdue_retrieve
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reports/download/spend/excel/:
+    get:
+      operationId: reports_download_spend_excel_retrieve
+      description: Instant Excel download (sync — for small datasets)
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reports/download/spend/pdf/:
+    get:
+      operationId: reports_download_spend_pdf_retrieve
+      description: Instant PDF spend report download
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reports/download/vendors/excel/:
+    get:
+      operationId: reports_download_vendors_excel_retrieve
+      description: Instant vendor performance Excel download
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reports/generate/spend/:
+    post:
+      operationId: reports_generate_spend_create
+      description: Queue async Excel report generation
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reports/tasks/{task_id}/:
+    get:
+      operationId: reports_tasks_retrieve
+      description: Check async task status
+      parameters:
+      - in: path
+        name: task_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reports/dashboard/:
+    get:
+      operationId: reports_dashboard_retrieve
+      description: Returns aggregated dashboard metrics tailored to the authenticated
+        user role.
+      summary: Role-scoped dashboard
+      tags:
+      - Reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+components:
+  schemas:
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+          nullable: true
+        user_name:
+          type: string
+          readOnly: true
+        action:
+          type: string
+          maxLength: 50
+        model_name:
+          type: string
+          maxLength: 100
+        object_id:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        object_repr:
+          type: string
+          maxLength: 255
+        details: {}
+        ip_address:
+          type: string
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - action
+      - id
+      - model_name
+      - timestamp
+      - user_name
+    Bid:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        rfq:
+          type: integer
+        rfq_number:
+          type: string
+          readOnly: true
+        vendor:
+          type: integer
+          readOnly: true
+        vendor_name:
+          type: string
+          readOnly: true
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        delivery_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: Estimated delivery in days
+        validity_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: Bid valid for X days
+        notes:
+          type: string
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Status32bEnum'
+          readOnly: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BidItem'
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - delivery_days
+      - id
+      - items
+      - rfq
+      - rfq_number
+      - status
+      - submitted_at
+      - total_amount
+      - updated_at
+      - vendor
+      - vendor_name
+    BidItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        rfq_item:
+          type: integer
+        rfq_item_name:
+          type: string
+          readOnly: true
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        total_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+      required:
+      - id
+      - quantity
+      - rfq_item
+      - rfq_item_name
+      - total_price
+      - unit_price
+    BidItemRequest:
+      type: object
+      properties:
+        rfq_item:
+          type: integer
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - quantity
+      - rfq_item
+      - unit_price
+    BidList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        rfq_number:
+          type: string
+          readOnly: true
+        vendor_name:
+          type: string
+          readOnly: true
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        delivery_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: Estimated delivery in days
+        status:
+          $ref: '#/components/schemas/Status32bEnum'
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - delivery_days
+      - id
+      - rfq_number
+      - submitted_at
+      - total_amount
+      - vendor_name
+    BidRequest:
+      type: object
+      properties:
+        rfq:
+          type: integer
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        delivery_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: Estimated delivery in days
+        validity_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: Bid valid for X days
+        notes:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BidItemRequest'
+      required:
+      - delivery_days
+      - items
+      - rfq
+      - total_amount
+    DocumentTypeEnum:
+      enum:
+      - REGISTRATION
+      - TAX
+      - LICENSE
+      - OTHER
+      type: string
+      description: |-
+        * `REGISTRATION` - Company Registration
+        * `TAX` - Tax Certificate
+        * `LICENSE` - Business License
+        * `OTHER` - Other
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        invoice_number:
+          type: string
+          readOnly: true
+        purchase_order:
+          type: integer
+        po_number:
+          type: string
+          readOnly: true
+        vendor:
+          type: integer
+          readOnly: true
+        vendor_name:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Status650Enum'
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        invoice_date:
+          type: string
+          format: date
+        due_date:
+          type: string
+          format: date
+        file_name:
+          type: string
+          maxLength: 255
+        file_url:
+          type: string
+          format: uri
+          maxLength: 200
+        notes:
+          type: string
+        rejection_reason:
+          type: string
+          readOnly: true
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        reviewed_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        reviewed_by_name:
+          type: string
+          readOnly: true
+        approved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        approved_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        approved_by_name:
+          type: string
+          readOnly: true
+        paid_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        paid_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        paid_by_name:
+          type: string
+          readOnly: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceItem'
+          readOnly: true
+        payment:
+          allOf:
+          - $ref: '#/components/schemas/Payment'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - approved_at
+      - approved_by
+      - approved_by_name
+      - created_at
+      - due_date
+      - id
+      - invoice_date
+      - invoice_number
+      - items
+      - paid_at
+      - paid_by
+      - paid_by_name
+      - payment
+      - po_number
+      - purchase_order
+      - rejection_reason
+      - reviewed_at
+      - reviewed_by
+      - reviewed_by_name
+      - status
+      - submitted_at
+      - updated_at
+      - vendor
+      - vendor_name
+    InvoiceItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        description:
+          type: string
+          maxLength: 255
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        total_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+      required:
+      - description
+      - id
+      - quantity
+      - total_price
+      - unit_price
+    InvoiceItemRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          minLength: 1
+          maxLength: 255
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+      required:
+      - description
+      - quantity
+      - unit_price
+    InvoiceList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        invoice_number:
+          type: string
+          maxLength: 100
+        po_number:
+          type: string
+          readOnly: true
+        vendor_name:
+          type: string
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/Status650Enum'
+        invoice_date:
+          type: string
+          format: date
+        due_date:
+          type: string
+          format: date
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - due_date
+      - id
+      - invoice_date
+      - invoice_number
+      - po_number
+      - submitted_at
+      - vendor_name
+    InvoiceRequest:
+      type: object
+      properties:
+        purchase_order:
+          type: integer
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        invoice_date:
+          type: string
+          format: date
+        due_date:
+          type: string
+          format: date
+        file_name:
+          type: string
+          maxLength: 255
+        file_url:
+          type: string
+          format: uri
+          maxLength: 200
+        notes:
+          type: string
+      required:
+      - amount
+      - due_date
+      - invoice_date
+      - purchase_order
+    POItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        item_name:
+          type: string
+          maxLength: 255
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        total_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        specifications:
+          type: string
+      required:
+      - id
+      - item_name
+      - quantity
+      - total_price
+      - unit_price
+    POItemRequest:
+      type: object
+      properties:
+        item_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        specifications:
+          type: string
+      required:
+      - item_name
+      - quantity
+      - unit_price
+    PaginatedAuditLogList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLog'
+    PaginatedBidListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BidList'
+    PaginatedInvoiceListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceList'
+    PaginatedPurchaseOrderListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseOrderList'
+    PaginatedPurchaseRequestListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseRequestList'
+    PaginatedRFQListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RFQList'
+    PaginatedVendorCategoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/VendorCategory'
+    PaginatedVendorListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/VendorList'
+    PatchedBidRequest:
+      type: object
+      properties:
+        rfq:
+          type: integer
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        delivery_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: Estimated delivery in days
+        validity_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: Bid valid for X days
+        notes:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BidItemRequest'
+    PatchedInvoiceRequest:
+      type: object
+      properties:
+        purchase_order:
+          type: integer
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        invoice_date:
+          type: string
+          format: date
+        due_date:
+          type: string
+          format: date
+        file_name:
+          type: string
+          maxLength: 255
+        file_url:
+          type: string
+          format: uri
+          maxLength: 200
+        notes:
+          type: string
+    PatchedPurchaseOrderRequest:
+      type: object
+      properties:
+        purchase_request:
+          type: integer
+        awarded_bid:
+          type: integer
+        status:
+          $ref: '#/components/schemas/StatusA45Enum'
+        delivery_address:
+          type: string
+          minLength: 1
+        expected_delivery_date:
+          type: string
+          format: date
+        special_instructions:
+          type: string
+    PatchedPurchaseRequestRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        estimated_budget:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RequestItemRequest'
+    PatchedRFQRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        purchase_request:
+          type: integer
+        deadline:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/StatusF1eEnum'
+        invited_vendors:
+          type: array
+          items:
+            type: integer
+    PatchedUserProfileRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        department:
+          type: integer
+          nullable: true
+        phone_number:
+          type: string
+          maxLength: 15
+    PatchedVendorCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+    PatchedVendorRequest:
+      type: object
+      properties:
+        company_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        registration_number:
+          type: string
+          minLength: 1
+          maxLength: 100
+        address:
+          type: string
+          minLength: 1
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        country:
+          type: string
+          minLength: 1
+          maxLength: 100
+        website:
+          type: string
+          format: uri
+          maxLength: 200
+        tax_number:
+          type: string
+          maxLength: 100
+        category_ids:
+          type: array
+          items:
+            type: integer
+            writeOnly: true
+          writeOnly: true
+    Payment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        invoice:
+          type: integer
+        amount_paid:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        payment_method:
+          $ref: '#/components/schemas/PaymentMethodEnum'
+        payment_reference:
+          type: string
+          maxLength: 255
+        payment_date:
+          type: string
+          format: date
+        notes:
+          type: string
+        processed_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        processed_by_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount_paid
+      - created_at
+      - id
+      - invoice
+      - payment_date
+      - payment_method
+      - processed_by
+      - processed_by_name
+    PaymentMethodEnum:
+      enum:
+      - BANK_TRANSFER
+      - CHEQUE
+      - ONLINE
+      - CASH
+      type: string
+      description: |-
+        * `BANK_TRANSFER` - Bank Transfer
+        * `CHEQUE` - Cheque
+        * `ONLINE` - Online Payment
+        * `CASH` - Cash
+    PaymentRequest:
+      type: object
+      properties:
+        invoice:
+          type: integer
+        amount_paid:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        payment_method:
+          $ref: '#/components/schemas/PaymentMethodEnum'
+        payment_reference:
+          type: string
+          maxLength: 255
+        payment_date:
+          type: string
+          format: date
+        notes:
+          type: string
+      required:
+      - amount_paid
+      - invoice
+      - payment_date
+      - payment_method
+    PurchaseOrder:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        po_number:
+          type: string
+          readOnly: true
+        purchase_request:
+          type: integer
+        purchase_request_title:
+          type: string
+          readOnly: true
+        awarded_bid:
+          type: integer
+        vendor:
+          type: integer
+          readOnly: true
+        vendor_name:
+          type: string
+          readOnly: true
+        vendor_address:
+          type: string
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/StatusA45Enum'
+        delivery_address:
+          type: string
+        expected_delivery_date:
+          type: string
+          format: date
+        special_instructions:
+          type: string
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        pdf_url:
+          type: string
+          format: uri
+          readOnly: true
+        created_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        created_by_name:
+          type: string
+          readOnly: true
+        sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        acknowledged_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/POItem'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - acknowledged_at
+      - awarded_bid
+      - created_at
+      - created_by
+      - created_by_name
+      - delivery_address
+      - expected_delivery_date
+      - id
+      - items
+      - pdf_url
+      - po_number
+      - purchase_request
+      - purchase_request_title
+      - sent_at
+      - total_amount
+      - updated_at
+      - vendor
+      - vendor_address
+      - vendor_name
+    PurchaseOrderList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        po_number:
+          type: string
+          maxLength: 50
+        vendor_name:
+          type: string
+          readOnly: true
+        purchase_request_title:
+          type: string
+          readOnly: true
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/StatusA45Enum'
+        expected_delivery_date:
+          type: string
+          format: date
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - expected_delivery_date
+      - id
+      - po_number
+      - purchase_request_title
+      - total_amount
+      - vendor_name
+    PurchaseOrderRequest:
+      type: object
+      properties:
+        purchase_request:
+          type: integer
+        awarded_bid:
+          type: integer
+        status:
+          $ref: '#/components/schemas/StatusA45Enum'
+        delivery_address:
+          type: string
+          minLength: 1
+        expected_delivery_date:
+          type: string
+          format: date
+        special_instructions:
+          type: string
+      required:
+      - awarded_bid
+      - delivery_address
+      - expected_delivery_date
+      - purchase_request
+    PurchaseRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        requester:
+          type: integer
+          readOnly: true
+        requester_name:
+          type: string
+          readOnly: true
+        department:
+          type: integer
+          readOnly: true
+        department_name:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        estimated_budget:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusB29Enum'
+          readOnly: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RequestItem'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - department
+      - department_name
+      - estimated_budget
+      - id
+      - items
+      - requester
+      - requester_name
+      - status
+      - title
+      - updated_at
+    PurchaseRequestList:
+      type: object
+      description: Lightweight serializer for list views
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        requester_name:
+          type: string
+          readOnly: true
+        department_name:
+          type: string
+          readOnly: true
+        estimated_budget:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/StatusB29Enum'
+        item_count:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - department_name
+      - estimated_budget
+      - id
+      - item_count
+      - requester_name
+      - title
+    PurchaseRequestRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        estimated_budget:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RequestItemRequest'
+      required:
+      - estimated_budget
+      - items
+      - title
+    RFQ:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        rfq_number:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        purchase_request:
+          type: integer
+        purchase_request_title:
+          type: string
+          readOnly: true
+        deadline:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/StatusF1eEnum'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RFQItem'
+          readOnly: true
+        invited_vendors:
+          type: array
+          items:
+            type: integer
+        invited_vendor_names:
+          type: string
+          readOnly: true
+        created_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        created_by_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - created_by_name
+      - deadline
+      - id
+      - invited_vendor_names
+      - items
+      - purchase_request
+      - purchase_request_title
+      - rfq_number
+      - title
+      - updated_at
+    RFQItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        item_name:
+          type: string
+          maxLength: 255
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        specifications:
+          type: string
+        estimated_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+      required:
+      - estimated_unit_price
+      - id
+      - item_name
+      - quantity
+    RFQItemRequest:
+      type: object
+      properties:
+        item_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        specifications:
+          type: string
+        estimated_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+      required:
+      - estimated_unit_price
+      - item_name
+      - quantity
+    RFQList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        rfq_number:
+          type: string
+          maxLength: 50
+        title:
+          type: string
+          maxLength: 255
+        status:
+          $ref: '#/components/schemas/StatusF1eEnum'
+        deadline:
+          type: string
+          format: date-time
+        purchase_request_title:
+          type: string
+          readOnly: true
+        bid_count:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - bid_count
+      - created_at
+      - deadline
+      - id
+      - purchase_request_title
+      - rfq_number
+      - title
+    RFQRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        purchase_request:
+          type: integer
+        deadline:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/StatusF1eEnum'
+        invited_vendors:
+          type: array
+          items:
+            type: integer
+      required:
+      - deadline
+      - purchase_request
+      - title
+    RequestItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        item_name:
+          type: string
+          maxLength: 255
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        estimated_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        specifications:
+          type: string
+        estimated_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+      required:
+      - estimated_total
+      - estimated_unit_price
+      - id
+      - item_name
+      - quantity
+    RequestItemRequest:
+      type: object
+      properties:
+        item_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        estimated_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        specifications:
+          type: string
+      required:
+      - estimated_unit_price
+      - item_name
+      - quantity
+    RoleEnum:
+      enum:
+      - EMPLOYEE
+      - MANAGER
+      - PROCUREMENT
+      - FINANCE
+      - VENDOR
+      - ADMIN
+      type: string
+      description: |-
+        * `EMPLOYEE` - Employee
+        * `MANAGER` - Manager
+        * `PROCUREMENT` - Procurement
+        * `FINANCE` - Finance
+        * `VENDOR` - Vendor
+        * `ADMIN` - Admin
+    Status32bEnum:
+      enum:
+      - SUBMITTED
+      - UNDER_REVIEW
+      - SHORTLISTED
+      - REJECTED
+      - AWARDED
+      type: string
+      description: |-
+        * `SUBMITTED` - Submitted
+        * `UNDER_REVIEW` - Under Review
+        * `SHORTLISTED` - Shortlisted
+        * `REJECTED` - Rejected
+        * `AWARDED` - Awarded
+    Status650Enum:
+      enum:
+      - SUBMITTED
+      - UNDER_REVIEW
+      - APPROVED
+      - REJECTED
+      - PAID
+      type: string
+      description: |-
+        * `SUBMITTED` - Submitted
+        * `UNDER_REVIEW` - Under Review
+        * `APPROVED` - Approved
+        * `REJECTED` - Rejected
+        * `PAID` - Paid
+    StatusA45Enum:
+      enum:
+      - DRAFT
+      - SENT
+      - ACKNOWLEDGED
+      - IN_PROGRESS
+      - DELIVERED
+      - CANCELLED
+      type: string
+      description: |-
+        * `DRAFT` - Draft
+        * `SENT` - Sent to Vendor
+        * `ACKNOWLEDGED` - Acknowledged by Vendor
+        * `IN_PROGRESS` - In Progress
+        * `DELIVERED` - Delivered
+        * `CANCELLED` - Cancelled
+    StatusB29Enum:
+      enum:
+      - PENDING_APPROVAL
+      - APPROVED
+      - REJECTED
+      - CHANGES_REQUESTED
+      - RFQ_CREATED
+      - VENDOR_SELECTED
+      - PO_GENERATED
+      - INVOICE_RECEIVED
+      - COMPLETED
+      - CANCELLED
+      type: string
+      description: |-
+        * `PENDING_APPROVAL` - Pending Manager Approval
+        * `APPROVED` - Approved
+        * `REJECTED` - Rejected
+        * `CHANGES_REQUESTED` - Changes Requested
+        * `RFQ_CREATED` - RFQ Created
+        * `VENDOR_SELECTED` - Vendor Selected
+        * `PO_GENERATED` - PO Generated
+        * `INVOICE_RECEIVED` - Invoice Received
+        * `COMPLETED` - Completed
+        * `CANCELLED` - Cancelled
+    StatusDd8Enum:
+      enum:
+      - PENDING
+      - ACTIVE
+      - SUSPENDED
+      - BLACKLISTED
+      type: string
+      description: |-
+        * `PENDING` - Pending Verification
+        * `ACTIVE` - Active
+        * `SUSPENDED` - Suspended
+        * `BLACKLISTED` - Blacklisted
+    StatusF1eEnum:
+      enum:
+      - OPEN
+      - CLOSED
+      - AWARDED
+      - CANCELLED
+      type: string
+      description: |-
+        * `OPEN` - Open for Bids
+        * `CLOSED` - Closed
+        * `AWARDED` - Awarded
+        * `CANCELLED` - Cancelled
+    TokenObtainPair:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - refresh
+    TokenObtainPairRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - password
+      - username
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        department:
+          type: integer
+          nullable: true
+        department_name:
+          type: string
+          readOnly: true
+        phone_number:
+          type: string
+          maxLength: 15
+      required:
+      - department_name
+      - id
+      - username
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+        department:
+          type: integer
+          nullable: true
+        phone_number:
+          type: string
+          maxLength: 15
+      required:
+      - id
+      - role
+      - username
+    UserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        department:
+          type: integer
+          nullable: true
+        phone_number:
+          type: string
+          maxLength: 15
+      required:
+      - password
+      - username
+    Vendor:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+          readOnly: true
+        user_email:
+          type: string
+          readOnly: true
+        company_name:
+          type: string
+          maxLength: 255
+        registration_number:
+          type: string
+          maxLength: 100
+        address:
+          type: string
+        city:
+          type: string
+          maxLength: 100
+        country:
+          type: string
+          maxLength: 100
+        website:
+          type: string
+          format: uri
+          maxLength: 200
+        tax_number:
+          type: string
+          maxLength: 100
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusDd8Enum'
+          readOnly: true
+        rating:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,2})?$
+          readOnly: true
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/VendorCategory'
+          readOnly: true
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/VendorDocument'
+          readOnly: true
+        verified_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address
+      - categories
+      - city
+      - company_name
+      - country
+      - created_at
+      - documents
+      - id
+      - rating
+      - registration_number
+      - status
+      - user
+      - user_email
+      - verified_at
+    VendorCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+      required:
+      - id
+      - name
+    VendorCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+      required:
+      - name
+    VendorDocument:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+        file_name:
+          type: string
+          maxLength: 255
+        file_url:
+          type: string
+          format: uri
+          maxLength: 200
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - document_type
+      - file_name
+      - file_url
+      - id
+      - uploaded_at
+    VendorDocumentRequest:
+      type: object
+      properties:
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+        file_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        file_url:
+          type: string
+          format: uri
+          minLength: 1
+          maxLength: 200
+      required:
+      - document_type
+      - file_name
+      - file_url
+    VendorList:
+      type: object
+      description: Lightweight serializer for list views
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        company_name:
+          type: string
+          maxLength: 255
+        city:
+          type: string
+          maxLength: 100
+        country:
+          type: string
+          maxLength: 100
+        status:
+          $ref: '#/components/schemas/StatusDd8Enum'
+        rating:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,2})?$
+        category_names:
+          type: string
+          readOnly: true
+      required:
+      - category_names
+      - city
+      - company_name
+      - country
+      - id
+    VendorRequest:
+      type: object
+      properties:
+        company_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        registration_number:
+          type: string
+          minLength: 1
+          maxLength: 100
+        address:
+          type: string
+          minLength: 1
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        country:
+          type: string
+          minLength: 1
+          maxLength: 100
+        website:
+          type: string
+          format: uri
+          maxLength: 200
+        tax_number:
+          type: string
+          maxLength: 100
+        category_ids:
+          type: array
+          items:
+            type: integer
+            writeOnly: true
+          writeOnly: true
+      required:
+      - address
+      - category_ids
+      - city
+      - company_name
+      - country
+      - registration_number
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+- name: Auth
+  description: Authentication and user management
+- name: Purchase Requests
+  description: Create and manage purchase requests
+- name: Vendors
+  description: Vendor onboarding and management
+- name: RFQs
+  description: Request for Quotation management
+- name: Bids
+  description: Vendor bid submission and comparison
+- name: Purchase Orders
+  description: PO generation and tracking
+- name: Invoices
+  description: Invoice submission and payment
+- name: Reports
+  description: Analytics and reporting
+- name: Audit
+  description: Audit trail and activity logs
