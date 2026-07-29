@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from rest_framework import permissions
 from accounts.permissions import IsFinance, IsProcurement, IsAdmin
 from accounts.throttles import ReportDownloadThrottle
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 from .queries import (
     get_total_spend_summary,
     get_spend_by_department,
@@ -38,6 +40,15 @@ from .dashboard import get_dashboard_data
 class SpendSummaryView(APIView):
     permission_classes = [IsFinance]
 
+    @extend_schema(
+        tags=['Reports'],
+        summary='Spend summary',
+        parameters=[
+            OpenApiParameter('start_date', OpenApiTypes.DATE, description='Start date (YYYY-MM-DD)'),
+            OpenApiParameter('end_date', OpenApiTypes.DATE, description='End date (YYYY-MM-DD)'),
+        ],
+        responses={200: OpenApiTypes.OBJECT}
+    )
     def get(self, request):
         serializer = DateRangeSerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
@@ -299,6 +310,12 @@ class TaskStatusView(APIView):
 class DashboardView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        tags=['Reports'],
+        summary='Role-scoped dashboard',
+        description='Returns aggregated dashboard metrics tailored to the authenticated user role.',
+        responses={200: OpenApiTypes.OBJECT}
+    )
     def get(self, request):
         data = get_dashboard_data(request.user)
         return Response(data)        

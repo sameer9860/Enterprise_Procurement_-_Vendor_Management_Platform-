@@ -57,9 +57,52 @@ from .serializers import (
     PaymentSerializer, PaymentCreateSerializer
 )
 from accounts.permissions import IsFinance
+from drf_spectacular.utils import (
+    extend_schema, extend_schema_view,
+    OpenApiParameter, OpenApiExample
+)
+from drf_spectacular.types import OpenApiTypes
 
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=['Purchase Requests'],
+        summary='List purchase requests',
+        description='Returns purchase requests filtered by user role. Employees see only their own, managers see their department.',
+        parameters=[
+            OpenApiParameter('status', OpenApiTypes.STR, description='Filter by status'),
+            OpenApiParameter('search', OpenApiTypes.STR, description='Search by title'),
+            OpenApiParameter('page', OpenApiTypes.INT, description='Page number'),
+        ]
+    ),
+    create=extend_schema(
+        tags=['Purchase Requests'],
+        summary='Create purchase request',
+        description='Employee creates a new purchase request with items.',
+        examples=[
+            OpenApiExample(
+                'Example Request',
+                value={
+                    "title": "50 Dell Laptops",
+                    "description": "For new engineering hires",
+                    "estimated_budget": 50000,
+                    "items": [
+                        {
+                            "item_name": "Dell Latitude 5440",
+                            "quantity": 50,
+                            "estimated_unit_price": 1000,
+                            "specifications": "16GB RAM, i7, 512GB SSD"
+                        }
+                    ]
+                }
+            )
+        ]
+    ),
+    retrieve=extend_schema(tags=['Purchase Requests'], summary='Get purchase request detail'),
+    update=extend_schema(tags=['Purchase Requests'], summary='Update purchase request'),
+    destroy=extend_schema(tags=['Purchase Requests'], summary='Delete purchase request'),
+)
 class PurchaseRequestViewSet(viewsets.ModelViewSet):
     queryset = PurchaseRequest.objects.select_related('requester', 'department').prefetch_related('items')
     permission_classes = [permissions.IsAuthenticated]
@@ -185,6 +228,13 @@ class PurchaseRequestViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
 
+@extend_schema_view(
+    list=extend_schema(tags=['Vendors'], summary='List vendors'),
+    create=extend_schema(tags=['Vendors'], summary='Create vendor profile'),
+    retrieve=extend_schema(tags=['Vendors'], summary='Get vendor detail'),
+    update=extend_schema(tags=['Vendors'], summary='Update vendor profile'),
+    destroy=extend_schema(tags=['Vendors'], summary='Delete vendor profile'),
+)
 class VendorViewSet(viewsets.ModelViewSet):
     queryset = Vendor.objects.select_related('user').prefetch_related('categories', 'documents')
     permission_classes = [permissions.IsAuthenticated]
@@ -302,6 +352,13 @@ class VendorCategoryViewSet(viewsets.ModelViewSet):
             return [IsAdmin()]
         return [permissions.IsAuthenticated()]
 
+@extend_schema_view(
+    list=extend_schema(tags=['RFQs'], summary='List RFQs'),
+    create=extend_schema(tags=['RFQs'], summary='Create RFQ'),
+    retrieve=extend_schema(tags=['RFQs'], summary='Get RFQ detail'),
+    update=extend_schema(tags=['RFQs'], summary='Update RFQ'),
+    destroy=extend_schema(tags=['RFQs'], summary='Delete RFQ'),
+)
 class RFQViewSet(viewsets.ModelViewSet):
     queryset = RFQ.objects.select_related(
         'purchase_request', 'created_by'
@@ -426,6 +483,13 @@ class RFQViewSet(viewsets.ModelViewSet):
             return Response({"message": "No bid has been awarded yet for this RFQ."})
 
 
+@extend_schema_view(
+    list=extend_schema(tags=['Bids'], summary='List bids'),
+    create=extend_schema(tags=['Bids'], summary='Submit a bid'),
+    retrieve=extend_schema(tags=['Bids'], summary='Get bid detail'),
+    update=extend_schema(tags=['Bids'], summary='Update bid'),
+    destroy=extend_schema(tags=['Bids'], summary='Delete bid'),
+)
 class BidViewSet(viewsets.ModelViewSet):
     queryset = Bid.objects.select_related('rfq', 'vendor').prefetch_related('items')
     permission_classes = [permissions.IsAuthenticated]
@@ -607,6 +671,13 @@ class BidViewSet(viewsets.ModelViewSet):
         })
 
 
+@extend_schema_view(
+    list=extend_schema(tags=['Purchase Orders'], summary='List purchase orders'),
+    create=extend_schema(tags=['Purchase Orders'], summary='Create purchase order'),
+    retrieve=extend_schema(tags=['Purchase Orders'], summary='Get PO detail'),
+    update=extend_schema(tags=['Purchase Orders'], summary='Update purchase order'),
+    destroy=extend_schema(tags=['Purchase Orders'], summary='Delete purchase order'),
+)
 class PurchaseOrderViewSet(viewsets.ModelViewSet):
     queryset = PurchaseOrder.objects.select_related(
         'purchase_request', 'vendor', 'awarded_bid', 'created_by'
@@ -917,6 +988,13 @@ class PurchaseOrderViewSet(viewsets.ModelViewSet):
         })
 
 
+@extend_schema_view(
+    list=extend_schema(tags=['Invoices'], summary='List invoices'),
+    create=extend_schema(tags=['Invoices'], summary='Create invoice'),
+    retrieve=extend_schema(tags=['Invoices'], summary='Get invoice detail'),
+    update=extend_schema(tags=['Invoices'], summary='Update invoice'),
+    destroy=extend_schema(tags=['Invoices'], summary='Delete invoice'),
+)
 class InvoiceViewSet(viewsets.ModelViewSet):
     queryset = Invoice.objects.select_related(
         'purchase_order', 'vendor',

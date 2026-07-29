@@ -3,6 +3,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 from .serializers import UserSerializer, UserProfileSerializer
 from .throttles import LoginRateThrottle, RegisterRateThrottle
 
@@ -15,18 +19,45 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
     throttle_classes = [RegisterRateThrottle]
 
+    @extend_schema(
+        tags=['Auth'],
+        summary='Register new user',
+        description='Create a new user account with a specific role.'
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+
 
 class ThrottledTokenObtainPairView(TokenObtainPairView):
     throttle_classes = [LoginRateThrottle]
+
+    @extend_schema(
+        tags=['Auth'],
+        summary='Obtain JWT token pair',
+        description='Authenticate with username and password to receive access and refresh tokens.'
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
 
 
 class ProfileView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        tags=['Auth'],
+        summary='Get current user profile',
+        responses={200: UserProfileSerializer}
+    )
     def get(self, request):
         serializer = UserProfileSerializer(request.user)
         return Response(serializer.data)
 
+    @extend_schema(
+        tags=['Auth'],
+        summary='Update user profile',
+        request=UserProfileSerializer,
+        responses={200: UserProfileSerializer}
+    )
     def patch(self, request):
         serializer = UserProfileSerializer(request.user, data=request.data, partial=True)
         if serializer.is_valid():
@@ -35,12 +66,16 @@ class ProfileView(APIView):
         return Response(serializer.errors, status=400)
 
 
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.exceptions import TokenError
-
 class LogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        tags=['Auth'],
+        summary='Logout user',
+        description='Blacklist the refresh token to logout.',
+        request=OpenApiTypes.OBJECT,
+        responses={200: OpenApiTypes.OBJECT}
+    )
     def post(self, request):
         refresh_token = request.data.get('refresh')
 
@@ -62,4 +97,5 @@ class LogoutView(APIView):
                 {"error": f"Invalid token: {str(e)}"},
                 status=400
             )
+
 
