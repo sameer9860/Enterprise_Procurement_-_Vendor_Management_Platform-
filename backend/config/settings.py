@@ -29,6 +29,15 @@ DEBUG = config('DEBUG', cast=bool)
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver', '0.0.0.0']
 
+# CORS (Next.js frontend)
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True  # development only
+else:
+    CORS_ALLOWED_ORIGINS = [
+        "https://your-vercel-app.vercel.app",
+        "https://your-custom-domain.com",
+    ]
+
 
 # Application definition
 
@@ -39,6 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
@@ -55,6 +65,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  
     'config.middleware.SecurityHeadersMiddleware',
     'config.middleware.InputSanitizationMiddleware',
     'config.middleware.RequestLoggingMiddleware',
