@@ -57,19 +57,21 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
         {/* User dropdown */}
         <DropdownMenu>
-          <DropdownMenuTrigger>
-            <Button
-              variant="ghost"
-              className="flex items-center space-x-2 hover:bg-gray-100"
-            >
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                {user?.username?.[0]?.toUpperCase()}
-              </div>
-              <span className="hidden sm:block text-sm font-medium">
-                {user?.username}
-              </span>
-              <ChevronDown className="w-4 h-4 text-gray-500" />
-            </Button>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                className="flex items-center space-x-2 hover:bg-gray-100"
+              />
+            }
+          >
+            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+              {user?.username?.[0]?.toUpperCase()}
+            </div>
+            <span className="hidden sm:block text-sm font-medium">
+              {user?.username}
+            </span>
+            <ChevronDown className="w-4 h-4 text-gray-500" />
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" className="w-48">
