@@ -1,7 +1,9 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { navigation } from '@/config/navigation'
 import { useRBAC } from '@/hooks/useRBAC'
@@ -27,6 +29,30 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
   const { user, role } = useRBAC()
   const { logout, isLoggingOut } = useAuth()
+  const touchStartX = useRef<number>(0)
+  const sidebarRef = useRef<HTMLElement>(null)
+
+  // Swipe to close
+  useEffect(() => {
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX.current = e.touches[0].clientX
+    }
+    const handleTouchEnd = (e: TouchEvent) => {
+      const deltaX = e.changedTouches[0].clientX - touchStartX.current
+      if (deltaX < -60) onClose() // swipe left to close
+    }
+    const sidebar = sidebarRef.current
+    if (sidebar) {
+      sidebar.addEventListener('touchstart', handleTouchStart)
+      sidebar.addEventListener('touchend', handleTouchEnd)
+    }
+    return () => {
+      if (sidebar) {
+        sidebar.removeEventListener('touchstart', handleTouchStart)
+        sidebar.removeEventListener('touchend', handleTouchEnd)
+      }
+    }
+  }, [onClose])
 
   const filteredNavigation = navigation
     .map((group) => ({
@@ -49,6 +75,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       {/* Sidebar */}
       <aside
+        ref={sidebarRef}
         className={cn(
           'fixed top-0 left-0 h-full w-64 bg-slate-900 border-r border-slate-800 z-30 transition-transform duration-300 flex flex-col justify-between',
           'lg:translate-x-0 lg:static lg:z-auto',
@@ -56,8 +83,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         )}
       >
         <div className="flex flex-col flex-1 min-h-0">
-          {/* Logo */}
-          <div className="h-16 flex items-center px-6 border-b border-slate-800 shrink-0">
+          {/* Logo + Mobile Close */}
+          <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800 shrink-0">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
                 <LayoutDashboard className="w-4 h-4 text-white" />
@@ -67,6 +94,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <p className="text-slate-400 text-xs">Platform</p>
               </div>
             </div>
+            <button
+              onClick={onClose}
+              className="lg:hidden text-slate-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Navigation links */}
@@ -106,9 +139,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </nav>
         </div>
 
-        {/* Bottom Section: User Info & Logout Button with Separator */}
+        {/* Bottom Section: User Info & Logout Button */}
         <div className="p-4 border-t border-slate-800 bg-slate-950/60 shrink-0 space-y-3">
-          {/* User profile details (Above) */}
           <div className="flex items-center space-x-3 px-1">
             <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-sm shrink-0">
               {user?.username?.[0]?.toUpperCase() || 'U'}
@@ -128,10 +160,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             </div>
           </div>
 
-          {/* Separator */}
           <div className="border-t border-slate-800/80 my-2" />
 
-          {/* Logout button (Below) */}
           <button
             onClick={() => logout()}
             disabled={isLoggingOut}
