@@ -7,21 +7,22 @@ import { CheckSquare, Search, Clock } from 'lucide-react'
 import { requestsApi } from '@/lib/api'
 import PageHeader from '@/components/shared/PageHeader'
 import StatusBadge from '@/components/shared/StatusBadge'
-import LoadingSpinner from '@/components/shared/LoadingSpinner'
 import EmptyState from '@/components/shared/EmptyState'
 import RoleGuard from '@/components/layout/RoleGuard'
+import { TableSkeleton } from '@/components/shared/Skeletons'
+import ApiError from '@/components/shared/ApiError'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { formatCurrency, formatDate, timeAgo } from '@/lib/utils'
+import { formatCurrency, timeAgo } from '@/lib/utils'
 
 export default function ApprovalsPage() {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['approvals', { search, page }],
     queryFn: () =>
       requestsApi.list({
@@ -64,7 +65,9 @@ export default function ApprovalsPage() {
         <Card>
           <CardContent className="pt-0">
             {isLoading ? (
-              <LoadingSpinner text="Loading approvals..." />
+              <TableSkeleton rows={5} />
+            ) : error ? (
+              <ApiError error={error as Error} onRetry={refetch} />
             ) : !data?.results || data.results.length === 0 ? (
               <EmptyState
                 icon={CheckSquare}
@@ -72,23 +75,23 @@ export default function ApprovalsPage() {
                 description="All requests have been reviewed"
               />
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-100 dark:divide-slate-800">
                 {data.results.map((req) => (
                   <div
                     key={req.id}
-                    className="py-4 px-4 hover:bg-gray-50 cursor-pointer flex items-center justify-between gap-4"
+                    className="py-4 px-4 hover:bg-gray-50 dark:hover:bg-slate-800/50 cursor-pointer flex items-center justify-between gap-4"
                     onClick={() =>
                       router.push(`/approvals/${req.id}`)
                     }
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-medium text-gray-900">
+                        <p className="font-medium text-gray-900 dark:text-white">
                           {req.title}
                         </p>
                         <StatusBadge status={req.status} />
                       </div>
-                      <div className="flex items-center gap-4 mt-1 text-sm text-gray-500 flex-wrap">
+                      <div className="flex items-center gap-4 mt-1 text-sm text-gray-500 dark:text-gray-400 flex-wrap">
                         <span>By {req.requester_name}</span>
                         <span>{req.department_name}</span>
                         <span>{req.item_count} items</span>
@@ -98,11 +101,14 @@ export default function ApprovalsPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <p className="font-semibold text-gray-900 hidden sm:block">
+
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">
                         {formatCurrency(req.estimated_budget)}
                       </p>
-                      <Button size="sm">Review</Button>
+                      <Button size="sm" className="mt-1">
+                        Review
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -111,9 +117,9 @@ export default function ApprovalsPage() {
 
             {/* Pagination */}
             {data && data.count > 10 && (
-              <div className="flex justify-between items-center px-4 py-4 border-t">
-                <p className="text-sm text-gray-500">
-                  {data.count} total pending
+              <div className="flex items-center justify-between px-4 py-4 border-t dark:border-slate-800">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {data.count} pending requests
                 </p>
                 <div className="flex gap-2">
                   <Button
