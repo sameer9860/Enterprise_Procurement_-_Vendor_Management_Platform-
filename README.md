@@ -90,7 +90,11 @@ git clone https://github.com/sameer9860/Enterprise_Procurement_-_Vendor_Manageme
 cd Enterprise_Procurement_-_Vendor_Management_Platform-
 ```
 
-### 2. Backend Setup (Docker Compose - Recommended)
+---
+
+### 2. Backend Setup
+
+#### **Option A: Using Docker & Docker Compose (Recommended)**
 
 ```bash
 # Navigate to backend directory and configure environment variables
@@ -105,6 +109,43 @@ docker-compose exec web python manage.py migrate
 # Create initial admin superuser
 docker-compose exec web python manage.py createsuperuser
 ```
+
+#### **Option B: Running Locally (Without Docker / Virtual Environment)**
+
+1. **Start PostgreSQL & Redis**:
+   Ensure PostgreSQL server and Redis are installed and running locally on your machine.
+
+2. **Configure Environment Variables**:
+   ```bash
+   cp backend/.env.example backend/.env
+   ```
+   Update `backend/.env` with your local PostgreSQL credentials:
+   ```env
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_NAME=procurement_db
+   DB_USER=postgres
+   DB_PASSWORD=your_password
+   ```
+
+3. **Create Virtual Environment & Install Dependencies**:
+   ```bash
+   cd backend
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+4. **Run Migrations & Create Superuser**:
+   ```bash
+   python manage.py migrate
+   python manage.py createsuperuser
+   ```
+
+5. **Start Development Server**:
+   ```bash
+   python manage.py runserver
+   ```
 
 *Backend server will run at*: `http://localhost:8000/`  
 *API Base URL*: `http://localhost:8000/api/`  
