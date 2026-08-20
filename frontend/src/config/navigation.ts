@@ -61,10 +61,16 @@ export const navigation: NavGroup[] = [
         roles: ['PROCUREMENT', 'ADMIN', 'VENDOR', 'MANAGER'],
       },
       {
-        label: 'Bids',
+        label: 'My Bids',
+        href: '/bids/my-bids',
+        icon: Gavel,
+        roles: ['VENDOR'],
+      },
+      {
+        label: 'Bid Comparison',
         href: '/bids',
         icon: Gavel,
-        roles: ['PROCUREMENT', 'ADMIN', 'VENDOR'],
+        roles: ['PROCUREMENT', 'ADMIN'],
       },
       {
         label: 'Purchase Orders',
