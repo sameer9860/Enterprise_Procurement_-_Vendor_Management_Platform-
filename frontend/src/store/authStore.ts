@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import Cookies from 'js-cookie'
 import { User, AuthTokens } from '@/types/auth'
 
@@ -7,12 +7,12 @@ interface AuthState {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
-
-  // Actions
+  _hasHydrated: boolean
   setUser: (user: User) => void
   setTokens: (tokens: AuthTokens) => void
   logout: () => void
   setLoading: (loading: boolean) => void
+  setHasHydrated: (state: boolean) => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -21,18 +21,21 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       isLoading: false,
+      _hasHydrated: false,
 
-      setUser: (user) => set({ user, isAuthenticated: true }),
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
+
+      setUser: (user) =>
+        set({ user, isAuthenticated: true }),
 
       setTokens: (tokens) => {
-        // Store tokens in cookies
         Cookies.set('access_token', tokens.access, {
-          expires: 1 / 24,    // 1 hour
+          expires: 1 / 24,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'strict',
         })
         Cookies.set('refresh_token', tokens.refresh, {
-          expires: 7,         // 7 days
+          expires: 7,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'strict',
         })
@@ -48,11 +51,14 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      // Only persist user, not loading state
+      storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      },
     }
   )
 )
