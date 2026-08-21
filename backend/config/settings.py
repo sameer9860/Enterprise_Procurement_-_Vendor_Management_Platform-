@@ -35,6 +35,10 @@ ALLOWED_HOSTS = config(
 
 BACKEND_URL = config('BACKEND_URL', default='')
 
+# Render Reverse Proxy Header support
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+
 # CORS (Next.js frontend)
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True  # development only
