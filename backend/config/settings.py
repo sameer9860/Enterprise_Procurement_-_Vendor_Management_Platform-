@@ -29,7 +29,7 @@ DEBUG = config('DEBUG', cast=bool)
 
 ALLOWED_HOSTS = config(
     'ALLOWED_HOSTS',
-    default='localhost,127.0.0.1,testserver,0.0.0.0',
+    default='localhost,127.0.0.1,testserver,0.0.0.0,.onrender.com,*',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 
