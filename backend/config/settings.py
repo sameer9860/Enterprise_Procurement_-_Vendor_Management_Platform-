@@ -27,16 +27,24 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', cast=bool)
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver', '0.0.0.0']
+ALLOWED_HOSTS = config(
+    'ALLOWED_HOSTS',
+    default='localhost,127.0.0.1,testserver,0.0.0.0',
+    cast=lambda v: [s.strip() for s in v.split(',')]
+)
+
+BACKEND_URL = config('BACKEND_URL', default='')
 
 # CORS (Next.js frontend)
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True  # development only
 else:
-    CORS_ALLOWED_ORIGINS = [
-        "https://your-vercel-app.vercel.app",
-        "https://your-custom-domain.com",
-    ]
+    CORS_ALLOWED_ORIGINS = config(
+        'CORS_ALLOWED_ORIGINS',
+        default='https://your-vercel-app.vercel.app',
+        cast=lambda v: [s.strip() for s in v.split(',') if s.strip()]
+    )
+    CORS_ALLOW_CREDENTIALS = True
 
 
 # Application definition
@@ -101,16 +109,28 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST'),
-        'PORT': config('DB_PORT'),
+import dj_database_url
+
+DATABASE_URL = config('DATABASE_URL', default=None)
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=60,
+            ssl_require=not DEBUG
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME'),
+            'USER': config('DB_USER'),
+            'PASSWORD': config('DB_PASSWORD'),
+            'HOST': config('DB_HOST'),
+            'PORT': config('DB_PORT'),
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators

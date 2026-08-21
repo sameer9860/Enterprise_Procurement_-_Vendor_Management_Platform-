@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: procurement-backend
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: ./build.sh
+    startCommand: gunicorn config.wsgi:application --config gunicorn.conf.py
+    envVars:
+      - key: DJANGO_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "false"
+      - key: PYTHON_VERSION
+        value: 3.11.9
+    healthCheckPath: /health/
+
+  - type: worker
+    name: procurement-celery-worker
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A config worker --loglevel=info --concurrency=1
+    envVars:
+      - key: DJANGO_ENV
+        value: production
+
+  - type: worker
+    name: procurement-celery-beat
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    envVars:
+      - key: DJANGO_ENV
+        value: production

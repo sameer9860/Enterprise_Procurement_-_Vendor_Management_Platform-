@@ -461,3 +461,16 @@ def remind_po_delivery_due():
         )
 
     logger.info(f"PO delivery reminders sent. Count: {due_pos.count()}")
+
+
+@shared_task
+def ping_self():
+    """Keep Render free tier warm — runs every 14 minutes"""
+    import requests
+    from django.conf import settings
+    backend_url = getattr(settings, 'BACKEND_URL', '')
+    if backend_url:
+        try:
+            requests.get(f"{backend_url}/health/", timeout=10)
+        except Exception:
+            pass
