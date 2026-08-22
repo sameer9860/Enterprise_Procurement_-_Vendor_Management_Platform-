@@ -35,9 +35,15 @@ ALLOWED_HOSTS = config(
 
 BACKEND_URL = config('BACKEND_URL', default='')
 
-# Render Reverse Proxy Header support
+# Render Reverse Proxy Header & CSRF support
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
+
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default='https://*.onrender.com,https://enterprise-procurement-vendor-management.onrender.com,https://enterprise-procurement-vendor-manag.vercel.app,https://*.vercel.app',
+    cast=lambda v: [s.strip() for s in v.split(',') if s.strip()]
+)
 
 # CORS (Next.js frontend)
 if DEBUG:
@@ -45,7 +51,7 @@ if DEBUG:
 else:
     CORS_ALLOWED_ORIGINS = config(
         'CORS_ALLOWED_ORIGINS',
-        default='https://your-vercel-app.vercel.app',
+        default='https://enterprise-procurement-vendor-manag.vercel.app,https://*.vercel.app',
         cast=lambda v: [s.strip() for s in v.split(',') if s.strip()]
     )
     CORS_ALLOW_CREDENTIALS = True
@@ -77,6 +83,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',  
     'config.middleware.SecurityHeadersMiddleware',
     'config.middleware.InputSanitizationMiddleware',
@@ -175,7 +182,16 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage' if not DEBUG else 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
