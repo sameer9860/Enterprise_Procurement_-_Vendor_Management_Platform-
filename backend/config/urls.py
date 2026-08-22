@@ -20,10 +20,9 @@ def api_root(request):
         'documentation': '/api/docs/',
         'endpoints': {
             'auth': '/api/auth/',
-            'accounts': '/api/accounts/',
             'procurement': '/api/procurement/',
             'audit': '/api/audit/',
-            'reports': '/api/reports/dashboard/',
+            'reports': '/api/reports/',
             'docs': '/api/docs/',
             'redoc': '/api/redoc/',
             'schema': '/api/schema/',
@@ -35,10 +34,9 @@ urlpatterns = [
     path('health/', health_check, name='health_check'),
     path('admin/', admin.site.urls),
 
-    # API Root & endpoints (support both /api/auth/ and /api/accounts/)
+    # API Root & app endpoints
     path('api/', api_root, name='api_root'),
     path('api/auth/', include('accounts.urls')),
-    path('api/accounts/', include('accounts.urls')),
     path('api/procurement/', include('procurement.urls')),
     path('api/audit/', include('audit.urls')),
     path('api/reports/', include('reporting.urls')),

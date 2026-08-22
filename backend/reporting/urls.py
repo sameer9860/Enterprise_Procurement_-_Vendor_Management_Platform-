@@ -1,4 +1,5 @@
 from django.urls import path
+from django.http import JsonResponse
 from .views import (
     SpendSummaryView,
     SpendByDepartmentView,
@@ -18,7 +19,29 @@ from .views import (
     DashboardView,
 )
 
+def reports_root(request):
+    return JsonResponse({
+        'message': 'Reporting & Analytics API',
+        'endpoints': {
+            'dashboard': '/api/reports/dashboard/',
+            'spend_summary': '/api/reports/spend/summary/',
+            'spend_by_department': '/api/reports/spend/by-department/',
+            'spend_by_month': '/api/reports/spend/by-month/',
+            'spend_by_quarter': '/api/reports/spend/by-quarter/',
+            'spend_by_category': '/api/reports/spend/by-category/',
+            'vendor_performance': '/api/reports/vendors/performance/',
+            'vendor_bid_comparison': '/api/reports/vendors/bid-comparison/',
+            'pipeline': '/api/reports/pipeline/',
+            'invoices': '/api/reports/invoices/',
+            'overdue_invoices': '/api/reports/invoices/overdue/',
+            'download_spend_excel': '/api/reports/download/spend/excel/',
+            'download_spend_pdf': '/api/reports/download/spend/pdf/',
+            'download_vendors_excel': '/api/reports/download/vendors/excel/',
+        }
+    })
+
 urlpatterns = [
+    path('', reports_root, name='reports_root'),
     # Spend reports
     path('spend/summary/', SpendSummaryView.as_view(), name='spend-summary'),
     path('spend/by-department/', SpendByDepartmentView.as_view(), name='spend-department'),
