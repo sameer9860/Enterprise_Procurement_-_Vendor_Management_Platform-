@@ -14,6 +14,10 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 
+# Allow passing SECRET_KEY at build time (Render: set as a Build Environment Variable)
+ARG SECRET_KEY
+ENV SECRET_KEY=$SECRET_KEY
+
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
