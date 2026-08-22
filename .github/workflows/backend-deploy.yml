@@ -1,0 +1,47 @@
+name: Backend Deploy to Render
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+
+  workflow_run:
+    workflows: ["Backend CI"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    if: >
+      github.event_name == 'push' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Trigger Render Deploy
+        run: |
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+          echo "Deploy triggered successfully"
+
+      - name: Wait for Deploy
+        run: |
+          echo "Waiting 60s for Render to start deploying..."
+          sleep 60
+
+      - name: Health Check
+        run: |
+          echo "Checking if backend is healthy..."
+          for i in {1..10}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              https://enterprise-procurement-vendor-management.onrender.com/health/)
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Backend is healthy"
+              exit 0
+            fi
+            echo "Attempt $i: Status $STATUS — waiting 30s..."
+            sleep 30
+          done
+          echo "❌ Health check failed after 10 attempts"
+          exit 1
