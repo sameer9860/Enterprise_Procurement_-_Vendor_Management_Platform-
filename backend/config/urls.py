@@ -14,12 +14,28 @@ from drf_spectacular.views import (
 def health_check(request):
     return JsonResponse({'status': 'healthy', 'platform': 'enterprise-procurement'})
 
+def api_root(request):
+    return JsonResponse({
+        'message': 'Enterprise Procurement Platform API',
+        'documentation': '/api/docs/',
+        'endpoints': {
+            'auth': '/api/auth/',
+            'procurement': '/api/procurement/',
+            'audit': '/api/audit/',
+            'reports': '/api/reports/',
+            'docs': '/api/docs/',
+            'redoc': '/api/redoc/',
+            'schema': '/api/schema/',
+        }
+    })
+
 urlpatterns = [
     path('', health_check, name='home_health'),
     path('health/', health_check, name='health_check'),
     path('admin/', admin.site.urls),
 
-    # API endpoints
+    # API Root & endpoints
+    path('api/', api_root, name='api_root'),
     path('api/auth/', include('accounts.urls')),
     path('api/procurement/', include('procurement.urls')),
     path('api/audit/', include('audit.urls')),
