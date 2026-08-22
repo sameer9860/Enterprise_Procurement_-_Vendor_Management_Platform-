@@ -33,14 +33,21 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "Username can only contain letters, numbers, and underscores."
             )
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError(
+                "A user with this username already exists."
+            )
         return value
 
     def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
+        if not value:
+            return value
+        cleaned = value.lower().strip()
+        if User.objects.filter(email__iexact=cleaned).exists():
             raise serializers.ValidationError(
                 "A user with this email already exists."
             )
-        return value.lower().strip()
+        return cleaned
 
     def validate_phone_number(self, value):
         if value:
@@ -60,4 +67,3 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'username', 'email', 'role', 'department', 'phone_number']
         read_only_fields = ['role']
-
