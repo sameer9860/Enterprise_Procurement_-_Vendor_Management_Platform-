@@ -16,9 +16,5 @@ fi
 # Install Python dependencies
 pip install -r requirements.txt
 
-# Django setup
-python manage.py collectstatic --noinput
-python manage.py migrate --noinput
-
-# Auto-create superuser on free tier deployment
-python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); username = '${ADMIN_USERNAME:-admin}'; email = '${ADMIN_EMAIL:-admin@example.com}'; password = '${ADMIN_PASSWORD:-AdminPass123!}'; User.objects.create_superuser(username, email, password, role='ADMIN') if not User.objects.filter(username=username).exists() else print('Superuser already exists.')"
+# Note: don't run Django management commands here — run them at container start
+# (migrations and collectstatic require runtime env vars which aren't available during image build).

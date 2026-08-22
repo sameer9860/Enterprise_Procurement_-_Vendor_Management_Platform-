@@ -266,7 +266,8 @@ SIMPLE_JWT = {
 
     # Algorithm
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': config('SECRET_KEY'),
+    # Use the already-resolved SECRET_KEY value for signing
+    'SIGNING_KEY': SECRET_KEY,
 
     # Header settings
     'AUTH_HEADER_TYPES': ('Bearer',),
@@ -285,9 +286,9 @@ SIMPLE_JWT = {
 }
 
 # Supabase storage configuration (placeholder values can be filled later)
-SUPABASE_URL = config('SUPABASE_URL')
-SUPABASE_KEY = config('SUPABASE_KEY')
-SUPABASE_STORAGE_BUCKET = config('SUPABASE_STORAGE_BUCKET')
+SUPABASE_URL = config('SUPABASE_URL', default='')
+SUPABASE_KEY = config('SUPABASE_KEY', default='')
+SUPABASE_STORAGE_BUCKET = config('SUPABASE_STORAGE_BUCKET', default='')
 USE_SUPABASE = bool(SUPABASE_URL and SUPABASE_KEY)
 
 

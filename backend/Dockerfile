@@ -23,8 +23,10 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-# Collect static files for production
-RUN python manage.py collectstatic --noinput || true
+# Add entrypoint that runs migrations and collectstatic at container start
+COPY entrypoint.sh ./
+RUN chmod +x ./entrypoint.sh
 
 # Production entrypoint using Gunicorn
+ENTRYPOINT ["./entrypoint.sh"]
 CMD ["gunicorn", "config.wsgi:application", "--config", "gunicorn.conf.py"]
