@@ -31,7 +31,7 @@ class SecurityHeadersMiddleware:
         # Content Security Policy
         response['Content-Security-Policy'] = (
             "default-src 'self'; "
-            "script-src 'self'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data:; "
             "font-src 'self'; "
@@ -95,7 +95,7 @@ class InputSanitizationMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        if request.method in ['POST', 'PUT', 'PATCH']:
+        if request.path.startswith('/api/') and request.method in ['POST', 'PUT', 'PATCH']:
             if hasattr(request, 'data'):
                 from config.sanitizers import sanitize_dict
                 try:
