@@ -19,7 +19,7 @@ def api_root(request):
         'message': 'Enterprise Procurement Platform API',
         'documentation': '/api/docs/',
         'endpoints': {
-            'auth': '/api/auth/',
+            'accounts': '/api/accounts/',
             'procurement': '/api/procurement/',
             'audit': '/api/audit/',
             'reports': '/api/reports/',
@@ -36,7 +36,7 @@ urlpatterns = [
 
     # API Root & endpoints
     path('api/', api_root, name='api_root'),
-    path('api/auth/', include('accounts.urls')),
+    path('api/accounts/', include('accounts.urls')),
     path('api/procurement/', include('procurement.urls')),
     path('api/audit/', include('audit.urls')),
     path('api/reports/', include('reporting.urls')),
