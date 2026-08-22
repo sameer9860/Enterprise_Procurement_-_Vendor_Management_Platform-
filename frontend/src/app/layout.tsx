@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import QueryProvider from '@/components/providers/QueryProvider'
 import { Toaster } from 'react-hot-toast'
+import ColdStartBanner from '@/components/shared/ColdStartBanner'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -41,6 +42,7 @@ export default function RootLayout({
               },
             }}
           />
+          <ColdStartBanner />
         </QueryProvider>
       </body>
     </html>
