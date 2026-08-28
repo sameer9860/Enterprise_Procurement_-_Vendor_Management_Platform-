@@ -15,6 +15,12 @@ services:
         value: "false"
       - key: PYTHON_VERSION
         value: 3.11.9
+      - key: ADMIN_USERNAME
+        value: Samir
+      - key: ADMIN_EMAIL
+        value: khatiwadasamir0@gmail.com
+      - key: ADMIN_PASSWORD
+        sync: false
     healthCheckPath: /health/
 
   - type: worker
