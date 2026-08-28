@@ -40,3 +40,7 @@ xlsxwriter==3.2.0
 
 # Database URL parser for dj_database_url usage in settings
 dj-database-url==1.0.0
+
+# Production server & static files (Render / Docker)
+gunicorn==22.0.0
+whitenoise==6.7.0
