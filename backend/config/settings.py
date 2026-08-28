@@ -18,6 +18,44 @@ from datetime import timedelta
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def _normalize_origin(origin):
+    """Strip whitespace and any path from an origin URL."""
+    origin = origin.strip()
+    if not origin:
+        return ''
+
+    if '://' in origin:
+        scheme, remainder = origin.split('://', 1)
+        host = remainder.split('/', 1)[0]
+        return f'{scheme}://{host}'.rstrip('/')
+
+    return origin.rstrip('/')
+
+
+def _parse_origin_list(value):
+    origins = []
+    for item in value.split(','):
+        origin = _normalize_origin(item)
+        if origin:
+            origins.append(origin)
+    return origins
+
+
+def _parse_cors_origins(value):
+    """Split explicit CORS origins from wildcard patterns."""
+    explicit_origins = []
+    origin_regexes = []
+
+    for origin in _parse_origin_list(value):
+        if '*' in origin:
+            pattern = '^' + origin.replace('.', r'\.').replace('*', r'[\w-]+') + '$'
+            origin_regexes.append(pattern)
+        else:
+            explicit_origins.append(origin)
+
+    return explicit_origins, origin_regexes
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
@@ -45,18 +83,21 @@ USE_X_FORWARDED_HOST = True
 CSRF_TRUSTED_ORIGINS = config(
     'CSRF_TRUSTED_ORIGINS',
     default='https://*.onrender.com,https://enterprise-procurement-vendor-management.onrender.com,https://enterprise-procurement-vendor-manag.vercel.app,https://*.vercel.app',
-    cast=lambda v: [s.strip() for s in v.split(',') if s.strip()]
+    cast=_parse_origin_list,
 )
 
 # CORS (Next.js frontend)
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True  # development only
 else:
-    CORS_ALLOWED_ORIGINS = config(
-        'CORS_ALLOWED_ORIGINS',
-        default='https://enterprise-procurement-vendor-manag.vercel.app,https://*.vercel.app',
-        cast=lambda v: [s.strip() for s in v.split(',') if s.strip()]
+    _cors_origins, _cors_origin_regexes = _parse_cors_origins(
+        config(
+            'CORS_ALLOWED_ORIGINS',
+            default='https://enterprise-procurement-vendor-manag.vercel.app,https://*.vercel.app',
+        )
     )
+    CORS_ALLOWED_ORIGINS = _cors_origins
+    CORS_ALLOWED_ORIGIN_REGEXES = _cors_origin_regexes
     CORS_ALLOW_CREDENTIALS = True
 
 
