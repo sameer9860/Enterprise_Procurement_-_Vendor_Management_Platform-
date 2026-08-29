@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { Loader2, Server, X } from 'lucide-react'
-import api from '@/lib/axios'
 
 export default function ColdStartBanner() {
   const [show, setShow] = useState(false)
@@ -12,36 +11,60 @@ export default function ColdStartBanner() {
   useEffect(() => {
     let timer: NodeJS.Timeout
     let interval: NodeJS.Timeout
+    let pollInterval: NodeJS.Timeout
     let isSubscribed = true
 
-    // Check if backend server is already active
-    const checkServerHealth = async () => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+    const healthUrl = baseUrl.replace(/\/api\/?$/, '/health/')
+
+    const checkHealth = async (): Promise<boolean> => {
       try {
-        // Fast ping to see if server is active (using root health endpoint)
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
-        const healthUrl = baseUrl.replace(/\/api\/?$/, '/health/')
-        
-        const response = await fetch(healthUrl, { signal: AbortSignal.timeout(2500) })
-        if (response.ok && isSubscribed) {
-          setShow(false) // Server is active, do not show banner
-          return
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 2000)
+
+        const res = await fetch(healthUrl, {
+          cache: 'no-store',
+          signal: controller.signal,
+        })
+        clearTimeout(timeoutId)
+
+        if (res.ok && isSubscribed) {
+          setShow(false) // Server is active/healthy — hide banner immediately!
+          return true
         }
       } catch {
-        // Health check failed or timed out — server is cold/waking up
+        // Server not ready or timed out
       }
-
-      if (isSubscribed && !dismissed) {
-        timer = setTimeout(() => setShow(true), 3000)
-      }
+      return false
     }
 
-    checkServerHealth()
+    // Initial check: if server is already active, don't schedule banner at all
+    checkHealth().then((isAlive) => {
+      if (!isAlive && isSubscribed && !dismissed) {
+        // Schedule banner after 3 seconds if server isn't active
+        timer = setTimeout(() => {
+          if (isSubscribed && !dismissed) {
+            setShow(true)
 
+            // Poll health every 3 seconds while waking up to auto-hide as soon as ready
+            pollInterval = setInterval(async () => {
+              const alive = await checkHealth()
+              if (alive && pollInterval) {
+                clearInterval(pollInterval)
+              }
+            }, 3000)
+          }
+        }, 3000)
+      }
+    })
+
+    // Seconds counter + 60s auto-off
     interval = setInterval(() => {
       setSeconds((s) => {
         if (s >= 59) {
           setShow(false) // Auto off after 60 seconds
           clearInterval(interval)
+          if (pollInterval) clearInterval(pollInterval)
           return 60
         }
         return s + 1
@@ -52,6 +75,7 @@ export default function ColdStartBanner() {
       isSubscribed = false
       if (timer) clearTimeout(timer)
       if (interval) clearInterval(interval)
+      if (pollInterval) clearInterval(pollInterval)
     }
   }, [dismissed])
 
@@ -65,7 +89,7 @@ export default function ColdStartBanner() {
       <div className="flex-1">
         <p className="text-sm font-medium">Server waking up...</p>
         <p className="text-xs text-slate-400">
-          Free tier cold start — {seconds}s
+          Free tier cold start - {seconds}s
         </p>
       </div>
       <Loader2 className="w-4 h-4 animate-spin text-blue-400 shrink-0" />
