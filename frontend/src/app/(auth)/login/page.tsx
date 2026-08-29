@@ -165,29 +165,29 @@ export default function LoginPage() {
       transition={{ duration: 0.45 }}
       className="w-full"
     >
-      <Card className="overflow-hidden rounded-2xl border-0 bg-white shadow-xl sm:rounded-3xl sm:shadow-2xl">
-        <CardHeader className="space-y-3 px-4 pt-6 pb-2 sm:space-y-4 sm:px-6 sm:pt-8">
+      <Card className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <CardHeader className="space-y-3 px-5 pt-7 pb-2 sm:px-6 sm:pt-8">
           <motion.div
-            initial={{ scale: 0.85 }}
+            initial={{ scale: 0.95 }}
             animate={{ scale: 1 }}
-            transition={{ delay: 0.1 }}
-            className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg sm:h-16 sm:w-16 sm:rounded-2xl"
+            transition={{ delay: 0.05 }}
+            className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 sm:h-14 sm:w-14"
           >
-            <ShoppingCart className="h-6 w-6 text-white sm:h-8 sm:w-8" />
+            <ShoppingCart className="h-6 w-6 text-white sm:h-7 sm:w-7" />
           </motion.div>
 
-          <div className="space-y-1 text-center sm:space-y-2">
-            <CardTitle className="text-2xl font-bold text-slate-900 sm:text-3xl">
-              Welcome Back
+          <div className="space-y-1 text-center sm:space-y-1.5">
+            <CardTitle className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+              Welcome back
             </CardTitle>
 
             <CardDescription className="text-sm text-slate-500 sm:text-base">
-              Sign in to continue to your account
+              Sign in to your procurement workspace
             </CardDescription>
           </div>
         </CardHeader>
 
-        <CardContent className="px-4 pt-4 pb-6 sm:px-6 sm:pt-6 sm:pb-8">
+        <CardContent className="px-5 pt-4 pb-7 sm:px-6 sm:pb-8">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
             <FloatingInput
               id="username"
@@ -237,11 +237,11 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+            <motion.div whileTap={{ scale: 0.99 }}>
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="h-12 w-full rounded-xl bg-blue-600 text-base font-semibold text-white hover:bg-blue-700 sm:h-14"
+                className="h-11 w-full rounded-lg bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 sm:h-12"
               >
                 {isLoading ? (
                   <>
