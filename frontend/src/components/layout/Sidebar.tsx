@@ -3,26 +3,16 @@
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { X } from 'lucide-react'
+import { LogOut, X, Package2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { navigation } from '@/config/navigation'
 import { useRBAC } from '@/hooks/useRBAC'
 import { useAuth } from '@/hooks/useAuth'
 import { UserRole } from '@/types/auth'
-import { LayoutDashboard, LogOut } from 'lucide-react'
 
 interface SidebarProps {
   isOpen: boolean
   onClose: () => void
-}
-
-const roleBadgeStyles: Record<string, string> = {
-  EMPLOYEE: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-  MANAGER: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  PROCUREMENT: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  FINANCE: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-  VENDOR: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-  ADMIN: 'bg-rose-500/20 text-rose-400 border-rose-500/30',
 }
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
@@ -32,14 +22,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const touchStartX = useRef<number>(0)
   const sidebarRef = useRef<HTMLElement>(null)
 
-  // Swipe to close
   useEffect(() => {
     const handleTouchStart = (e: TouchEvent) => {
       touchStartX.current = e.touches[0].clientX
     }
     const handleTouchEnd = (e: TouchEvent) => {
       const deltaX = e.changedTouches[0].clientX - touchStartX.current
-      if (deltaX < -60) onClose() // swipe left to close
+      if (deltaX < -60) onClose()
     }
     const sidebar = sidebarRef.current
     if (sidebar) {
@@ -65,51 +54,52 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-20 lg:hidden"
+          className="fixed inset-0 z-20 bg-slate-900/20 backdrop-blur-[1px] lg:hidden"
           onClick={onClose}
         />
       )}
 
-      {/* Sidebar */}
       <aside
         ref={sidebarRef}
         className={cn(
-          'fixed top-0 left-0 h-full w-64 bg-slate-900 border-r border-slate-800 z-30 transition-transform duration-300 flex flex-col justify-between',
-          'lg:translate-x-0 lg:static lg:z-auto',
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+          'fixed top-0 left-0 z-30 flex h-full w-[17.5rem] flex-col border-r border-slate-200 bg-white shadow-sm transition-transform duration-300',
+          'lg:static lg:z-auto lg:shadow-none',
+          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
-        <div className="flex flex-col flex-1 min-h-0">
-          {/* Logo + Mobile Close */}
-          <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800 shrink-0">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
-                <LayoutDashboard className="w-4 h-4 text-white" />
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 px-5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
+                <Package2 className="h-4 w-4" />
               </div>
               <div>
-                <p className="text-white font-semibold text-sm">Procurement</p>
-                <p className="text-slate-400 text-xs">Platform</p>
+                <p className="text-sm font-semibold tracking-tight text-slate-900">
+                  Procurement
+                </p>
+                <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">
+                  Platform
+                </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="lg:hidden text-slate-400 hover:text-white"
+              className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 lg:hidden"
+              aria-label="Close sidebar"
             >
-              <X className="w-5 h-5" />
+              <X className="h-5 w-5" />
             </button>
           </div>
 
-          {/* Navigation links */}
-          <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
+          <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
             {filteredNavigation.map((group) => (
               <div key={group.title}>
-                <p className="px-3 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
                   {group.title}
                 </p>
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   {group.items.map((item) => {
                     const isActive =
                       pathname === item.href ||
@@ -122,13 +112,22 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                         href={item.href}
                         onClick={onClose}
                         className={cn(
-                          'flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                          'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                           isActive
-                            ? 'bg-blue-600 text-white'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                         )}
                       >
-                        <Icon className="w-4 h-4 flex-shrink-0" />
+                        <span
+                          className={cn(
+                            'flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors',
+                            isActive
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200 group-hover:text-slate-700'
+                          )}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </span>
                         <span>{item.label}</span>
                       </Link>
                     )
@@ -139,36 +138,33 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </nav>
         </div>
 
-        {/* Bottom Section: User Info & Logout Button */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950/60 shrink-0 space-y-3">
-          <div className="flex items-center space-x-3 px-1">
-            <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-sm shrink-0">
+        <div className="shrink-0 border-t border-slate-100 bg-slate-50/80 p-4">
+          <div className="mb-3 flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
               {user?.username?.[0]?.toUpperCase() || 'U'}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-white text-sm font-medium truncate">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-slate-900">
                 {user?.username}
               </p>
-              <span
-                className={cn(
-                  'inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border mt-0.5',
-                  roleBadgeStyles[user?.role || ''] || 'bg-slate-800 text-slate-400 border-slate-700'
-                )}
-              >
-                {user?.role}
-              </span>
+              <p className="truncate text-xs text-slate-500">{user?.email}</p>
             </div>
           </div>
 
-          <div className="border-t border-slate-800/80 my-2" />
+          <div className="mb-3 flex items-center justify-between px-1">
+            <span className="text-xs text-slate-500">Role</span>
+            <span className="rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
+              {user?.role}
+            </span>
+          </div>
 
           <button
             onClick={() => logout()}
             disabled={isLoggingOut}
-            className="w-full flex items-center justify-center space-x-2 py-2 px-3 rounded-lg text-sm font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 border border-rose-900/30 transition-colors disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50"
           >
-            <LogOut className="w-4 h-4" />
-            <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+            <LogOut className="h-4 w-4" />
+            <span>{isLoggingOut ? 'Signing out...' : 'Sign out'}</span>
           </button>
         </div>
       </aside>
