@@ -1,6 +1,6 @@
 'use client'
 
-import { Menu, LogOut, User, ChevronDown } from 'lucide-react'
+import { Menu, LogOut, User, ChevronDown, LayoutDashboard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -72,6 +72,15 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
               <p className="text-xs font-normal text-slate-500">{user?.email}</p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <Link
+                href="/dashboard"
+                className="flex w-full cursor-pointer items-center"
+              >
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                Dashboard
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem>
               <Link
                 href="/profile"

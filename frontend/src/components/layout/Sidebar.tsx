@@ -17,7 +17,7 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
-  const { user, role } = useRBAC()
+  const { role } = useRBAC()
   const { logout, isLoggingOut } = useAuth()
   const touchStartX = useRef<number>(0)
   const sidebarRef = useRef<HTMLElement>(null)
@@ -139,31 +139,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         <div className="shrink-0 border-t border-slate-100 bg-slate-50/80 p-4">
-          <div className="mb-3 flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
-              {user?.username?.[0]?.toUpperCase() || 'U'}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-slate-900">
-                {user?.username}
-              </p>
-              <p className="truncate text-xs text-slate-500">{user?.email}</p>
-            </div>
-          </div>
-
-          <div className="mb-3 flex items-center justify-between px-1">
-            <span className="text-xs text-slate-500">Role</span>
-            <span className="rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
-              {user?.role}
-            </span>
-          </div>
-
           <button
             onClick={() => logout()}
             disabled={isLoggingOut}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-4 w-4 text-slate-500" />
             <span>{isLoggingOut ? 'Signing out...' : 'Sign out'}</span>
           </button>
         </div>
