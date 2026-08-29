@@ -7,7 +7,7 @@ import { useForm, type FieldError, type UseFormRegister } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { motion } from 'framer-motion'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import {
   Eye,
   EyeOff,

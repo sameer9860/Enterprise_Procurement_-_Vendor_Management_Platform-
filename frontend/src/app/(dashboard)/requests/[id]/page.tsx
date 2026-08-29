@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter, useParams } from 'next/navigation'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import {
   ArrowLeft,
   Clock,

@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 
 const VENDOR_STATUSES = [
   { value: 'ALL', label: 'All Statuses' },
