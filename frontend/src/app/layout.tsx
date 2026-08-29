@@ -27,17 +27,21 @@ export default function RootLayout({
             toastOptions={{
               duration: 4000,
               style: {
-                background: '#1a1a1a',
-                color: '#fff',
+                background: '#ffffff',
+                color: '#0f172a',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)',
               },
               success: {
                 style: {
-                  background: '#166534',
+                  borderColor: '#bfdbfe',
+                  color: '#1e40af',
                 },
               },
               error: {
                 style: {
-                  background: '#991b1b',
+                  borderColor: '#fecaca',
+                  color: '#b91c1c',
                 },
               },
             }}
