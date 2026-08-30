@@ -1,5 +1,27 @@
 import api from '@/lib/axios'
-import { LoginCredentials, RegisterData, AuthTokens, User } from '@/types/auth'
+import { LoginCredentials, RegisterData, AuthTokens, User, UserRole } from '@/types/auth'
+
+export interface AdminUserListItem {
+  id: number
+  username: string
+  email: string
+  first_name?: string
+  last_name?: string
+  role: UserRole
+  department?: number
+  department_name?: string
+  phone_number?: string
+  is_active: boolean
+  is_staff: boolean
+  date_joined: string
+}
+
+export interface PaginatedUsersResponse {
+  count: number
+  next: string | null
+  previous: string | null
+  results: AdminUserListItem[]
+}
 
 export const authApi = {
   login: async (credentials: LoginCredentials): Promise<AuthTokens> => {
@@ -28,6 +50,24 @@ export const authApi = {
 
   refreshToken: async (refresh: string): Promise<{ access: string }> => {
     const response = await api.post('/auth/login/refresh/', { refresh })
+    return response.data
+  },
+
+  listUsers: async (params?: {
+    search?: string
+    role?: string
+    is_active?: string
+    page?: number
+  }): Promise<PaginatedUsersResponse> => {
+    const response = await api.get('/auth/users/', { params })
+    return response.data
+  },
+
+  updateUser: async (
+    id: number,
+    data: Partial<AdminUserListItem>
+  ): Promise<AdminUserListItem> => {
+    const response = await api.patch(`/auth/users/${id}/`, data)
     return response.data
   },
 }
