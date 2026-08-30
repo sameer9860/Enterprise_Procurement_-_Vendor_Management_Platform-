@@ -35,7 +35,10 @@ from .serializers import (
     VendorSerializer, VendorListSerializer,
     VendorCategorySerializer, VendorVerifySerializer
 )
-from accounts.permissions import IsVendor, IsProcurement, IsAdmin
+from accounts.permissions import (
+    IsVendor, IsProcurement, IsAdmin, IsFinance,
+    IsManagerOrAdmin, IsProcurementOrAdmin, IsFinanceOrAdmin
+)
 
 from .models import RFQ, RFQItem
 from .serializers import RFQSerializer, RFQListSerializer, RFQCreateSerializer
@@ -56,7 +59,6 @@ from .serializers import (
     InvoiceSubmitSerializer, InvoiceReviewSerializer,
     PaymentSerializer, PaymentCreateSerializer
 )
-from accounts.permissions import IsFinance
 from drf_spectacular.utils import (
     extend_schema, extend_schema_view,
     OpenApiParameter, OpenApiExample
@@ -257,7 +259,7 @@ class VendorViewSet(viewsets.ModelViewSet):
         if self.action == 'create':
             return [permissions.IsAuthenticated()]
         if self.action in ['verify_vendor']:
-            return [IsProcurement()]
+            return [IsProcurementOrAdmin()]
         return [permissions.IsAuthenticated()]
 
     def perform_create(self, serializer):
@@ -392,7 +394,7 @@ class RFQViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['create', 'create_from_request', 'close_rfq', 'update', 'partial_update']:
-            return [IsProcurement()]
+            return [IsProcurementOrAdmin()]
         return [permissions.IsAuthenticated()]
 
     @action(detail=False, methods=['post'], permission_classes=[IsProcurement])
@@ -522,7 +524,7 @@ class BidViewSet(viewsets.ModelViewSet):
         if self.action == 'create':
             return [IsVendor()]
         if self.action in ['shortlist', 'reject_bid', 'award_bid', 'compare']:
-            return [IsProcurement()]
+            return [IsProcurementOrAdmin()]
         return [permissions.IsAuthenticated()]
 
     def perform_create(self, serializer):
@@ -711,12 +713,12 @@ class PurchaseOrderViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['generate_po', 'update_status', 'send_to_vendor']:
-            return [IsProcurement()]
+            return [IsProcurementOrAdmin()]
         if self.action == 'acknowledge':
             return [IsVendor()]
         return [permissions.IsAuthenticated()]
 
-    @action(detail=False, methods=['post'], permission_classes=[IsProcurement])
+    @action(detail=False, methods=['post'], permission_classes=[IsProcurementOrAdmin])
     def generate_po(self, request):
         serializer = POCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -1034,7 +1036,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         if self.action == 'submit_invoice':
             return [IsVendor()]
         if self.action in ['review_invoice', 'mark_under_review', 'record_payment', 'summary']:
-            return [IsFinance()]
+            return [IsFinanceOrAdmin()]
         return [permissions.IsAuthenticated()]
 
     @action(detail=False, methods=['post'], permission_classes=[IsVendor])

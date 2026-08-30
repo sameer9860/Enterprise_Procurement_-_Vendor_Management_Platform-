@@ -2,12 +2,15 @@ from rest_framework import generics, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
+from django.db.models import Q
+from rest_framework.pagination import PageNumberPagination
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
-from .serializers import UserSerializer, UserProfileSerializer
+from .serializers import UserSerializer, UserProfileSerializer, AdminUserSerializer
+from .permissions import IsAdmin
 from .throttles import LoginRateThrottle, RegisterRateThrottle
 
 User = get_user_model()
@@ -99,3 +102,58 @@ class LogoutView(APIView):
             )
 
 
+class AdminUserPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
+class UserManagementListView(generics.ListCreateAPIView):
+    serializer_class = AdminUserSerializer
+    permission_classes = [IsAdmin]
+    pagination_class = AdminUserPagination
+
+    def get_queryset(self):
+        qs = User.objects.select_related('department').order_by('-date_joined')
+        search = self.request.query_params.get('search')
+        role = self.request.query_params.get('role')
+        is_active = self.request.query_params.get('is_active')
+
+        if search:
+            qs = qs.filter(
+                Q(username__icontains=search) |
+                Q(email__icontains=search) |
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search)
+            )
+        if role:
+            qs = qs.filter(role=role)
+        if is_active is not None:
+            if is_active.lower() in ['true', '1']:
+                qs = qs.filter(is_active=True)
+            elif is_active.lower() in ['false', '0']:
+                qs = qs.filter(is_active=False)
+
+        return qs
+
+    @extend_schema(
+        tags=['Admin'],
+        summary='List all platform users',
+        description='Admin endpoint to list all platform users with filtering and search.'
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+
+class UserManagementDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = User.objects.all()
+    serializer_class = AdminUserSerializer
+    permission_classes = [IsAdmin]
+
+    @extend_schema(
+        tags=['Admin'],
+        summary='Retrieve or update user',
+        description='Admin endpoint to update user roles or active status.'
+    )
+    def patch(self, request, *args, **kwargs):
+        return super().patch(request, *args, **kwargs)

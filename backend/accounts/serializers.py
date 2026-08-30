@@ -67,3 +67,16 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'username', 'email', 'role', 'department', 'phone_number']
         read_only_fields = ['role']
+
+
+class AdminUserSerializer(serializers.ModelSerializer):
+    department_name = serializers.CharField(source='department.name', read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            'id', 'username', 'email', 'first_name', 'last_name',
+            'role', 'department', 'department_name', 'phone_number',
+            'is_active', 'is_staff', 'date_joined'
+        ]
+        read_only_fields = ['id', 'username', 'date_joined']

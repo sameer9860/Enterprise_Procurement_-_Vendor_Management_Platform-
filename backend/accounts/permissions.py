@@ -12,12 +12,12 @@ class IsManager(permissions.BasePermission):
 
 class IsProcurement(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role == 'PROCUREMENT'
+        return request.user.is_authenticated and request.user.role in ['PROCUREMENT', 'ADMIN']
 
 
 class IsFinance(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role == 'FINANCE'
+        return request.user.is_authenticated and request.user.role in ['FINANCE', 'ADMIN']
 
 
 class IsVendor(permissions.BasePermission):
@@ -27,18 +27,36 @@ class IsVendor(permissions.BasePermission):
 
 class IsAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role == 'ADMIN'
+        return request.user.is_authenticated and (
+            request.user.role == 'ADMIN' or request.user.is_superuser or request.user.is_staff
+        )
 
 
 class IsManagerOrAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role in ['MANAGER', 'ADMIN']
+        return request.user.is_authenticated and (
+            request.user.role in ['MANAGER', 'ADMIN'] or request.user.is_superuser or request.user.is_staff
+        )
+
+
+class IsProcurementOrAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and (
+            request.user.role in ['PROCUREMENT', 'ADMIN'] or request.user.is_superuser or request.user.is_staff
+        )
+
+
+class IsFinanceOrAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and (
+            request.user.role in ['FINANCE', 'ADMIN'] or request.user.is_superuser or request.user.is_staff
+        )
 
 
 class IsOwnerOrManager(permissions.BasePermission):
     """Object-level permission: owner can view/edit their own request, manager can view team requests"""
     def has_object_permission(self, request, view, obj):
-        if request.user.role == 'ADMIN':
+        if request.user.role in ['ADMIN'] or request.user.is_superuser or request.user.is_staff:
             return True
         if hasattr(obj, 'requester') and obj.requester == request.user:
             return True
@@ -52,6 +70,8 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
     Object level — owner can edit, others can only read.
     """
     def has_object_permission(self, request, view, obj):
+        if request.user.role in ['ADMIN'] or request.user.is_superuser or request.user.is_staff:
+            return True
         if request.method in permissions.SAFE_METHODS:
             return True
         if hasattr(obj, 'requester'):
@@ -66,7 +86,7 @@ class IsSameVendor(permissions.BasePermission):
     Vendor can only access their own profile and related objects.
     """
     def has_object_permission(self, request, view, obj):
-        if request.user.role != 'VENDOR':
+        if request.user.role in ['ADMIN', 'PROCUREMENT', 'FINANCE', 'MANAGER'] or request.user.is_superuser or request.user.is_staff:
             return True
         try:
             vendor_profile = request.user.vendor_profile
@@ -84,7 +104,7 @@ class CanAccessDepartmentData(permissions.BasePermission):
     Manager can only access data from their own department.
     """
     def has_object_permission(self, request, view, obj):
-        if request.user.role in ['ADMIN', 'PROCUREMENT', 'FINANCE']:
+        if request.user.role in ['ADMIN', 'PROCUREMENT', 'FINANCE'] or request.user.is_superuser or request.user.is_staff:
             return True
         if request.user.role == 'MANAGER':
             if hasattr(obj, 'department'):

@@ -1,7 +1,10 @@
 from django.urls import path
 from django.http import JsonResponse
 from rest_framework_simplejwt.views import TokenRefreshView
-from .views import RegisterView, ProfileView, ThrottledTokenObtainPairView, LogoutView
+from .views import (
+    RegisterView, ProfileView, ThrottledTokenObtainPairView, LogoutView,
+    UserManagementListView, UserManagementDetailView
+)
 
 def auth_root(request):
     return JsonResponse({
@@ -12,6 +15,7 @@ def auth_root(request):
             'refresh': '/api/auth/login/refresh/',
             'logout': '/api/auth/logout/',
             'profile': '/api/auth/profile/',
+            'users': '/api/auth/users/',
         }
     })
 
@@ -22,4 +26,6 @@ urlpatterns = [
     path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('profile/', ProfileView.as_view(), name='profile'),
+    path('users/', UserManagementListView.as_view(), name='user_list'),
+    path('users/<int:pk>/', UserManagementDetailView.as_view(), name='user_detail'),
 ]
