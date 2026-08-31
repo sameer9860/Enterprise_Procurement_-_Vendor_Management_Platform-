@@ -21,10 +21,6 @@ import {
   Users,
   ShieldCheck,
   TrendingUp,
-  Clock,
-  Check,
-  Layers,
-  Award,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuth'
@@ -52,10 +48,10 @@ export default function Home() {
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
       {/* Top Navbar */}
       <header className="sticky top-0 z-50 backdrop-blur-md bg-white/95 border-b border-slate-200/80 shadow-2xs">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 via-blue-700 to-indigo-600 text-white shadow-md shadow-blue-500/25 ring-1 ring-white/20">
-              <Package2 className="h-5 w-5 stroke-[2.2]" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 via-blue-700 to-indigo-600 text-white shadow-md shadow-blue-500/25 ring-1 ring-white/20">
+              <Package2 className="h-4.5 w-4.5 stroke-[2.2]" />
             </div>
             <div>
               <p className="text-base font-extrabold tracking-tight text-slate-900 leading-none mb-0.5">
@@ -86,7 +82,7 @@ export default function Home() {
             {user ? (
               <>
                 <Link href="/dashboard">
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 font-semibold px-4 h-9.5 text-xs sm:text-sm">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 font-semibold px-4 h-9 text-xs sm:text-sm">
                     <LayoutDashboard className="w-4 h-4 mr-1.5" />
                     Go to Dashboard
                   </Button>
@@ -96,10 +92,10 @@ export default function Home() {
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setIsDropdownOpen((prev) => !prev)}
-                    className="flex h-9.5 items-center gap-2 rounded-xl px-2.5 hover:bg-slate-100 transition-colors outline-none cursor-pointer border border-slate-200/90 bg-white shadow-2xs"
+                    className="flex h-9 items-center gap-2 rounded-xl px-2.5 hover:bg-slate-100 transition-colors outline-none cursor-pointer border border-slate-200/90 bg-white shadow-2xs"
                     aria-expanded={isDropdownOpen}
                   >
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-xs font-bold text-white shadow-2xs">
+                    <div className="flex h-6.5 w-6.5 items-center justify-center rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-xs font-bold text-white shadow-2xs">
                       {user.username?.[0]?.toUpperCase() || 'U'}
                     </div>
                     <span className="hidden text-xs font-bold text-slate-700 sm:block max-w-[100px] truncate">
@@ -166,13 +162,13 @@ export default function Home() {
                 <Link href="/login">
                   <Button
                     variant="ghost"
-                    className="text-slate-700 hover:text-blue-600 hover:bg-blue-50 font-semibold"
+                    className="text-slate-700 hover:text-blue-600 hover:bg-blue-50 font-semibold text-xs sm:text-sm"
                   >
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/register">
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 font-semibold px-5">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 font-semibold px-4 h-9 text-xs sm:text-sm">
                     Get Started
                     <ArrowRight className="w-4 h-4 ml-1.5" />
                   </Button>
@@ -183,40 +179,40 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero Section (Clean 2-Column Grid Layout with Dashboard Visual) */}
-      <section className="relative pt-12 pb-20 bg-gradient-to-b from-blue-50/80 via-white to-slate-50 border-b border-slate-200/60 overflow-hidden">
+      {/* Hero Section (Balanced 2-Column Layout with Clean Image & Proportioned Fonts) */}
+      <section className="relative pt-12 pb-16 bg-gradient-to-b from-blue-50/70 via-white to-slate-50 border-b border-slate-200/60 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             
-            {/* Left Column: Headline, Subtitle, CTAs */}
-            <div className="lg:col-span-6 space-y-6 text-left">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-100/80 border border-blue-200 text-xs font-extrabold text-blue-800 shadow-2xs">
+            {/* Left Column: Clean, tightly-proportioned typography & CTAs */}
+            <div className="lg:col-span-6 space-y-5 text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100/80 border border-blue-200 text-[11px] font-extrabold text-blue-800 shadow-2xs">
                 <Sparkles className="w-3.5 h-3.5 text-blue-600 fill-blue-600/30" />
-                Enterprise Procurement & Vendor Management System
+                Enterprise Procurement Platform
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.12]">
-                Streamline Requests, RFQs & Bidding in{' '}
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.16]">
+                Streamline your next <br className="hidden sm:inline" />
                 <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 bg-clip-text text-transparent">
-                  One Unified System
+                  procurement workflow.
                 </span>
               </h1>
 
-              <p className="text-base sm:text-lg text-slate-600 font-medium leading-relaxed">
-                Automate purchase requisitions, manager approvals, multi-vendor bid comparisons, PO generation, and invoice settlements with real-time audit logging and role-based governance.
+              <p className="text-sm sm:text-base text-slate-600 font-medium leading-relaxed max-w-xl">
+                Procurement Platform connects enterprises with verified vendors. Manage purchase requisitions, compare competitive RFQ bids, generate POs, and track invoices all in one place.
               </p>
 
-              <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
                 {user ? (
                   <>
                     <Link href="/dashboard" className="w-full sm:w-auto">
-                      <Button size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 h-12 text-base shadow-xl shadow-blue-600/20">
+                      <Button size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 h-11 text-sm shadow-md shadow-blue-600/20">
                         Go to Dashboard
-                        <ArrowRight className="w-5 h-5 ml-2" />
+                        <ArrowRight className="w-4 h-4 ml-2" />
                       </Button>
                     </Link>
                     <Link href="/profile" className="w-full sm:w-auto">
-                      <Button size="lg" variant="outline" className="w-full sm:w-auto border-slate-300 text-slate-700 bg-white hover:bg-slate-50 h-12 text-base px-7 font-bold">
+                      <Button size="lg" variant="outline" className="w-full sm:w-auto border-slate-300 text-slate-700 bg-white hover:bg-slate-50 h-11 text-sm px-6 font-bold">
                         View Profile
                       </Button>
                     </Link>
@@ -224,13 +220,13 @@ export default function Home() {
                 ) : (
                   <>
                     <Link href="/login" className="w-full sm:w-auto">
-                      <Button size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 h-12 text-base shadow-xl shadow-blue-600/20">
-                        Sign In to Platform
-                        <ArrowRight className="w-5 h-5 ml-2" />
+                      <Button size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 h-11 text-sm shadow-md shadow-blue-600/20">
+                        Go to Dashboard
+                        <ArrowRight className="w-4 h-4 ml-2" />
                       </Button>
                     </Link>
                     <Link href="/register" className="w-full sm:w-auto">
-                      <Button size="lg" variant="outline" className="w-full sm:w-auto border-slate-300 text-slate-700 bg-white hover:bg-slate-50 h-12 text-base px-7 font-bold">
+                      <Button size="lg" variant="outline" className="w-full sm:w-auto border-slate-300 text-slate-700 bg-white hover:bg-slate-50 h-11 text-sm px-6 font-bold">
                         Register Account
                       </Button>
                     </Link>
@@ -238,14 +234,14 @@ export default function Home() {
                 )}
               </div>
 
-              <div className="flex items-center gap-6 pt-4 border-t border-slate-200/80 text-xs text-slate-600 font-semibold">
+              <div className="flex items-center gap-5 pt-3 border-t border-slate-200/80 text-xs text-slate-600 font-semibold">
                 <span className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  100% Audit Traceability
+                  100% Audit Logging
                 </span>
                 <span className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-blue-600" />
-                  Auto PO PDF Exports
+                  Auto PO PDF Export
                 </span>
                 <span className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-indigo-600" />
@@ -254,48 +250,26 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right Column: High-Fidelity UI Dashboard Image & Floating Cards */}
+            {/* Right Column: Clean, perfectly aligned Dashboard UI Image */}
             <div className="lg:col-span-6 relative">
-              <div className="relative rounded-2xl bg-white border border-slate-200/90 shadow-2xl p-2.5 overflow-hidden">
-                <div className="flex items-center justify-between px-3 py-2 bg-slate-100 rounded-lg mb-2">
+              <div className="relative rounded-xl bg-white border border-slate-200 shadow-xl p-2 overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-1.5 bg-slate-100/90 rounded-md mb-2">
                   <div className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-full bg-rose-400" />
-                    <span className="w-3 h-3 rounded-full bg-amber-400" />
-                    <span className="w-3 h-3 rounded-full bg-emerald-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
                   </div>
-                  <span className="text-[11px] font-mono text-slate-500 font-semibold">
-                    Procurement Platform — Executive View
+                  <span className="text-[10px] font-mono text-slate-500 font-semibold">
+                    app.procurement.internal
                   </span>
                 </div>
 
-                <div className="relative rounded-lg overflow-hidden border border-slate-200">
+                <div className="relative rounded-md overflow-hidden border border-slate-200/80">
                   <img
                     src="/images/hero_dashboard.png"
-                    alt="Procurement Platform Executive Dashboard UI Mockup"
-                    className="w-full h-auto object-cover rounded-lg"
+                    alt="Procurement Platform Executive Dashboard"
+                    className="w-full h-auto object-cover rounded-md"
                   />
-                </div>
-              </div>
-
-              {/* Floating Metric 1 */}
-              <div className="absolute -bottom-5 -left-5 bg-white p-4 rounded-xl border border-slate-200/90 shadow-xl hidden sm:flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
-                  <TrendingUp className="w-5 h-5 stroke-[2.2]" />
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500 font-medium">Total Spend Control</p>
-                  <p className="text-base font-extrabold text-slate-900">$1,420,000.00</p>
-                </div>
-              </div>
-
-              {/* Floating Metric 2 */}
-              <div className="absolute -top-5 -right-5 bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-xl hidden sm:flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
-                  <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
-                </div>
-                <div>
-                  <p className="text-xs font-extrabold text-slate-900">100% Audit Verified</p>
-                  <p className="text-[11px] text-slate-500 font-medium">Strict Compliance</p>
                 </div>
               </div>
             </div>
@@ -303,7 +277,7 @@ export default function Home() {
           </div>
 
           {/* 4 Feature Key Metric Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16 p-6 rounded-2xl bg-white border border-slate-200/90 shadow-md text-left">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-12 p-6 rounded-2xl bg-white border border-slate-200/90 shadow-md text-left">
             <div>
               <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">6 Modules</p>
               <p className="text-xs text-slate-500 font-medium mt-1">Requisitions to Invoices</p>
@@ -325,13 +299,13 @@ export default function Home() {
       </section>
 
       {/* Features Grid Section */}
-      <section id="features" className="py-20 bg-white">
+      <section id="features" className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-xs font-extrabold uppercase tracking-widest text-blue-600 mb-3">
+          <div className="text-center max-w-3xl mx-auto mb-14">
+            <h2 className="text-xs font-extrabold uppercase tracking-widest text-blue-600 mb-2">
               Core Platform Features
             </h2>
-            <p className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Designed for Speed, Governance & Cost Control
             </p>
           </div>
@@ -383,13 +357,13 @@ export default function Home() {
             ].map((feature, idx) => (
               <div
                 key={idx}
-                className="p-8 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all"
+                className="p-7 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all"
               >
-                <div className={`w-12 h-12 rounded-xl ${feature.bg} border flex items-center justify-center mb-6`}>
-                  <feature.icon className={`w-6 h-6 ${feature.color} stroke-[2.2]`} />
+                <div className={`w-11 h-11 rounded-xl ${feature.bg} border flex items-center justify-center mb-5`}>
+                  <feature.icon className={`w-5 h-5 ${feature.color} stroke-[2.2]`} />
                 </div>
-                <h3 className="text-xl font-extrabold text-slate-900 mb-3">{feature.title}</h3>
-                <p className="text-sm text-slate-600 font-medium leading-relaxed">{feature.description}</p>
+                <h3 className="text-lg font-extrabold text-slate-900 mb-2.5">{feature.title}</h3>
+                <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -397,13 +371,13 @@ export default function Home() {
       </section>
 
       {/* Role Governance Section */}
-      <section id="roles" className="py-20 bg-slate-50 border-t border-slate-200/80">
+      <section id="roles" className="py-16 bg-slate-50 border-t border-slate-200/80">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-xs font-extrabold uppercase tracking-widest text-blue-600 mb-3">
+          <div className="text-center max-w-3xl mx-auto mb-14">
+            <h2 className="text-xs font-extrabold uppercase tracking-widest text-blue-600 mb-2">
               Role-Based Access
             </h2>
-            <p className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Tailored Workflows for Every Role
             </p>
           </div>
@@ -418,13 +392,13 @@ export default function Home() {
               { role: 'ADMIN', title: 'System Administrators', desc: 'Manage user access, verify vendor registrations, and audit system security.' },
             ].map((item) => (
               <div key={item.role} className="p-6 rounded-xl bg-white border border-slate-200 shadow-2xs hover:border-blue-300 transition-colors">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-3.5">
                   <span className="text-xs font-extrabold px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
                     {item.role}
                   </span>
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 </div>
-                <h4 className="font-extrabold text-slate-900 text-lg mb-2">{item.title}</h4>
+                <h4 className="font-extrabold text-slate-900 text-base mb-1.5">{item.title}</h4>
                 <p className="text-xs text-slate-600 font-medium leading-relaxed">{item.desc}</p>
               </div>
             ))}
@@ -433,11 +407,11 @@ export default function Home() {
       </section>
 
       {/* Multi-Column Footer */}
-      <footer id="about" className="mt-auto border-t border-slate-200 bg-white text-slate-600 pt-16 pb-8">
+      <footer id="about" className="mt-auto border-t border-slate-200 bg-white text-slate-600 pt-14 pb-8">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-slate-200/80">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-10 pb-10 border-b border-slate-200/80">
             {/* Column 1: About Us */}
-            <div className="space-y-4">
+            <div className="space-y-3.5">
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-sm">
                   <Package2 className="h-4 w-4 stroke-[2.2]" />
@@ -453,10 +427,10 @@ export default function Home() {
 
             {/* Column 2: Quick Links */}
             <div>
-              <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-4">
+              <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-3.5">
                 Quick Links
               </h4>
-              <ul className="space-y-2.5 text-xs font-semibold">
+              <ul className="space-y-2 text-xs font-semibold">
                 <li>
                   <Link href="/dashboard" className="hover:text-blue-600 transition-colors">
                     Dashboard Overview
@@ -487,10 +461,10 @@ export default function Home() {
 
             {/* Column 3: Platform Modules */}
             <div>
-              <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-4">
+              <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-3.5">
                 Modules
               </h4>
-              <ul className="space-y-2.5 text-xs font-semibold">
+              <ul className="space-y-2 text-xs font-semibold">
                 <li>
                   <Link href="/approvals" className="hover:text-blue-600 transition-colors">
                     Manager Approvals
@@ -521,7 +495,7 @@ export default function Home() {
 
             {/* Column 4: Security & Specs */}
             <div>
-              <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-4">
+              <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-3.5">
                 Security & Specs
               </h4>
               <div className="space-y-2 text-xs text-slate-600 font-medium">
