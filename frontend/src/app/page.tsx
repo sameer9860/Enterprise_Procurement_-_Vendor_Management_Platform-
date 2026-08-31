@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   Package2,
   Shield,
@@ -20,6 +21,8 @@ import {
   Building2,
   Users,
   ShieldCheck,
+  TrendingUp,
+  Clock,
   Check,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -47,7 +50,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-white/90 border-b border-slate-200/80 shadow-2xs">
+      <header className="sticky top-0 z-50 backdrop-blur-md bg-white/95 border-b border-slate-200/80 shadow-2xs">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-md shadow-blue-600/20">
@@ -179,59 +182,127 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative pt-16 pb-20 bg-gradient-to-b from-blue-50/70 via-white to-slate-50 border-b border-slate-200/60 overflow-hidden">
-        <div className="max-w-5xl mx-auto px-6 text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-xs font-bold text-blue-700 mb-6 shadow-2xs">
-            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-            Enterprise Procurement & Vendor Management Platform
+      {/* Hero Section (Clean 2-Column Layout with Image Showcase) */}
+      <section className="relative pt-12 pb-20 bg-gradient-to-b from-blue-50/70 via-white to-slate-50 border-b border-slate-200/60 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            
+            {/* Left Column: Text & CTAs */}
+            <div className="lg:col-span-6 space-y-6 text-left">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-xs font-bold text-blue-700 shadow-2xs">
+                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                Enterprise Procurement & Vendor Management Platform
+              </div>
+
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.12]">
+                Streamline Requests, RFQs & Bidding in{' '}
+                <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  One Unified System
+                </span>
+              </h1>
+
+              <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed">
+                Automate purchase requisitions, manager approvals, multi-vendor bid comparisons, PO generation, and invoice settlements with real-time audit logging and role-based governance.
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
+                {user ? (
+                  <>
+                    <Link href="/dashboard" className="w-full sm:w-auto">
+                      <Button size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 h-12 text-base shadow-xl shadow-blue-600/20">
+                        Go to Dashboard
+                        <ArrowRight className="w-5 h-5 ml-2" />
+                      </Button>
+                    </Link>
+                    <Link href="/profile" className="w-full sm:w-auto">
+                      <Button size="lg" variant="outline" className="w-full sm:w-auto border-slate-300 text-slate-700 bg-white hover:bg-slate-50 h-12 text-base px-7">
+                        View Profile
+                      </Button>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login" className="w-full sm:w-auto">
+                      <Button size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 h-12 text-base shadow-xl shadow-blue-600/20">
+                        Sign In to Platform
+                        <ArrowRight className="w-5 h-5 ml-2" />
+                      </Button>
+                    </Link>
+                    <Link href="/register" className="w-full sm:w-auto">
+                      <Button size="lg" variant="outline" className="w-full sm:w-auto border-slate-300 text-slate-700 bg-white hover:bg-slate-50 h-12 text-base px-7">
+                        Register Account
+                      </Button>
+                    </Link>
+                  </>
+                )}
+              </div>
+
+              <div className="flex items-center gap-6 pt-4 border-t border-slate-200/80 text-xs text-slate-500 font-medium">
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  100% Audit Logging
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                  Auto PO PDF Exports
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-indigo-600" />
+                  Strict RBAC Rules
+                </span>
+              </div>
+            </div>
+
+            {/* Right Column: High-Fidelity UI Dashboard Image & Floating Cards */}
+            <div className="lg:col-span-6 relative">
+              <div className="relative rounded-2xl bg-white border border-slate-200/90 shadow-2xl p-2.5 overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2 bg-slate-100 rounded-lg mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-rose-400" />
+                    <span className="w-3 h-3 rounded-full bg-amber-400" />
+                    <span className="w-3 h-3 rounded-full bg-emerald-400" />
+                  </div>
+                  <span className="text-[11px] font-mono text-slate-500 font-medium">
+                    Procurement Platform — Executive View
+                  </span>
+                </div>
+
+                <div className="relative rounded-lg overflow-hidden border border-slate-200">
+                  <img
+                    src="/images/hero_dashboard.png"
+                    alt="Procurement Platform Enterprise Dashboard UI Mockup"
+                    className="w-full h-auto object-cover rounded-lg"
+                  />
+                </div>
+              </div>
+
+              {/* Floating Badge 1 */}
+              <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-xl border border-slate-200 shadow-xl hidden sm:flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 font-medium">Total Spend Control</p>
+                  <p className="text-base font-bold text-slate-900">$1,420,000.00</p>
+                </div>
+              </div>
+
+              {/* Floating Badge 2 */}
+              <div className="absolute -top-6 -right-6 bg-white p-3.5 rounded-xl border border-slate-200 shadow-xl hidden sm:flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-900">100% Audit Verified</p>
+                  <p className="text-[11px] text-slate-500 font-medium">Strict Compliance</p>
+                </div>
+              </div>
+            </div>
+
           </div>
 
-          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.15] mb-6">
-            Streamline Requests, RFQs & Bidding in{' '}
-            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              One Unified System
-            </span>
-          </h1>
-
-          <p className="text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto font-normal leading-relaxed mb-10">
-            Automate purchase requisitions, manager approvals, multi-vendor bid comparisons, PO generation, and invoice settlements with real-time audit logging and role-based governance.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14">
-            {user ? (
-              <>
-                <Link href="/dashboard" className="w-full sm:w-auto">
-                  <Button size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 h-12 text-base shadow-xl shadow-blue-600/20">
-                    Go to Dashboard
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </Link>
-                <Link href="/profile" className="w-full sm:w-auto">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto border-slate-300 text-slate-700 bg-white hover:bg-slate-50 h-12 text-base px-8">
-                    View Profile
-                  </Button>
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link href="/login" className="w-full sm:w-auto">
-                  <Button size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 h-12 text-base shadow-xl shadow-blue-600/20">
-                    Sign In to Platform
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </Link>
-                <Link href="/register" className="w-full sm:w-auto">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto border-slate-300 text-slate-700 bg-white hover:bg-slate-50 h-12 text-base px-8">
-                    Register Account
-                  </Button>
-                </Link>
-              </>
-            )}
-          </div>
-
-          {/* Stats Bar */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 p-6 rounded-2xl bg-white border border-slate-200/90 shadow-md text-left">
+          {/* 4 Feature Key Metric Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16 p-6 rounded-2xl bg-white border border-slate-200/90 shadow-md text-left">
             <div>
               <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">6 Modules</p>
               <p className="text-xs text-slate-500 font-medium mt-1">Requisitions to Invoices</p>
@@ -252,7 +323,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features Grid */}
+      {/* Features Grid Section */}
       <section id="features" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-3xl mx-auto mb-16">
@@ -447,7 +518,7 @@ export default function Home() {
               </ul>
             </div>
 
-            {/* Column 4: Security & Support */}
+            {/* Column 4: Security & Specs */}
             <div>
               <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4">
                 Security & Specs
