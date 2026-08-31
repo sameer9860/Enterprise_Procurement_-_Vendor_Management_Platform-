@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import {
   Package2,
   Shield,
@@ -24,6 +23,8 @@ import {
   TrendingUp,
   Clock,
   Check,
+  Layers,
+  Award,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuth'
@@ -53,20 +54,20 @@ export default function Home() {
       <header className="sticky top-0 z-50 backdrop-blur-md bg-white/95 border-b border-slate-200/80 shadow-2xs">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-md shadow-blue-600/20">
-              <Package2 className="h-5 w-5" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 via-blue-700 to-indigo-600 text-white shadow-md shadow-blue-500/25 ring-1 ring-white/20">
+              <Package2 className="h-5 w-5 stroke-[2.2]" />
             </div>
             <div>
-              <p className="text-base font-bold tracking-tight text-slate-900">
+              <p className="text-base font-extrabold tracking-tight text-slate-900 leading-none mb-0.5">
                 Procurement
               </p>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-blue-600">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600 leading-none">
                 Platform
               </p>
             </div>
           </div>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+          <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
             <a href="#features" className="hover:text-blue-600 transition-colors">
               Features
             </a>
@@ -85,7 +86,7 @@ export default function Home() {
             {user ? (
               <>
                 <Link href="/dashboard">
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 font-medium px-4 h-9 text-xs sm:text-sm">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 font-semibold px-4 h-9.5 text-xs sm:text-sm">
                     <LayoutDashboard className="w-4 h-4 mr-1.5" />
                     Go to Dashboard
                   </Button>
@@ -95,13 +96,13 @@ export default function Home() {
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setIsDropdownOpen((prev) => !prev)}
-                    className="flex h-9 items-center gap-2 rounded-lg px-2 hover:bg-slate-100 transition-colors outline-none cursor-pointer border border-slate-200 bg-white"
+                    className="flex h-9.5 items-center gap-2 rounded-xl px-2.5 hover:bg-slate-100 transition-colors outline-none cursor-pointer border border-slate-200/90 bg-white shadow-2xs"
                     aria-expanded={isDropdownOpen}
                   >
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-xs font-bold text-white shadow-2xs">
                       {user.username?.[0]?.toUpperCase() || 'U'}
                     </div>
-                    <span className="hidden text-xs font-semibold text-slate-700 sm:block max-w-[100px] truncate">
+                    <span className="hidden text-xs font-bold text-slate-700 sm:block max-w-[100px] truncate">
                       {user.username}
                     </span>
                     <ChevronDown
@@ -128,7 +129,7 @@ export default function Home() {
                       <Link
                         href="/dashboard"
                         onClick={() => setIsDropdownOpen(false)}
-                        className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-colors"
+                        className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
                       >
                         <LayoutDashboard className="h-4 w-4 text-blue-600" />
                         <span>Dashboard</span>
@@ -137,7 +138,7 @@ export default function Home() {
                       <Link
                         href="/profile"
                         onClick={() => setIsDropdownOpen(false)}
-                        className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-colors"
+                        className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
                       >
                         <User className="h-4 w-4 text-purple-600" />
                         <span>Profile</span>
@@ -151,7 +152,7 @@ export default function Home() {
                           logout()
                         }}
                         disabled={isLoggingOut}
-                        className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-50 cursor-pointer"
+                        className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-50 cursor-pointer"
                       >
                         <LogOut className="h-4 w-4 text-rose-500" />
                         <span>{isLoggingOut ? 'Signing out...' : 'Sign out'}</span>
@@ -165,13 +166,13 @@ export default function Home() {
                 <Link href="/login">
                   <Button
                     variant="ghost"
-                    className="text-slate-700 hover:text-blue-600 hover:bg-blue-50"
+                    className="text-slate-700 hover:text-blue-600 hover:bg-blue-50 font-semibold"
                   >
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/register">
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 font-medium px-5">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 font-semibold px-5">
                     Get Started
                     <ArrowRight className="w-4 h-4 ml-1.5" />
                   </Button>
@@ -182,26 +183,26 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero Section (Clean 2-Column Layout with Image Showcase) */}
-      <section className="relative pt-12 pb-20 bg-gradient-to-b from-blue-50/70 via-white to-slate-50 border-b border-slate-200/60 overflow-hidden">
+      {/* Hero Section (Clean 2-Column Grid Layout with Dashboard Visual) */}
+      <section className="relative pt-12 pb-20 bg-gradient-to-b from-blue-50/80 via-white to-slate-50 border-b border-slate-200/60 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             
-            {/* Left Column: Text & CTAs */}
+            {/* Left Column: Headline, Subtitle, CTAs */}
             <div className="lg:col-span-6 space-y-6 text-left">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-xs font-bold text-blue-700 shadow-2xs">
-                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                Enterprise Procurement & Vendor Management Platform
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-100/80 border border-blue-200 text-xs font-extrabold text-blue-800 shadow-2xs">
+                <Sparkles className="w-3.5 h-3.5 text-blue-600 fill-blue-600/30" />
+                Enterprise Procurement & Vendor Management System
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.12]">
                 Streamline Requests, RFQs & Bidding in{' '}
-                <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 bg-clip-text text-transparent">
                   One Unified System
                 </span>
               </h1>
 
-              <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed">
+              <p className="text-base sm:text-lg text-slate-600 font-medium leading-relaxed">
                 Automate purchase requisitions, manager approvals, multi-vendor bid comparisons, PO generation, and invoice settlements with real-time audit logging and role-based governance.
               </p>
 
@@ -209,13 +210,13 @@ export default function Home() {
                 {user ? (
                   <>
                     <Link href="/dashboard" className="w-full sm:w-auto">
-                      <Button size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 h-12 text-base shadow-xl shadow-blue-600/20">
+                      <Button size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 h-12 text-base shadow-xl shadow-blue-600/20">
                         Go to Dashboard
                         <ArrowRight className="w-5 h-5 ml-2" />
                       </Button>
                     </Link>
                     <Link href="/profile" className="w-full sm:w-auto">
-                      <Button size="lg" variant="outline" className="w-full sm:w-auto border-slate-300 text-slate-700 bg-white hover:bg-slate-50 h-12 text-base px-7">
+                      <Button size="lg" variant="outline" className="w-full sm:w-auto border-slate-300 text-slate-700 bg-white hover:bg-slate-50 h-12 text-base px-7 font-bold">
                         View Profile
                       </Button>
                     </Link>
@@ -223,13 +224,13 @@ export default function Home() {
                 ) : (
                   <>
                     <Link href="/login" className="w-full sm:w-auto">
-                      <Button size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 h-12 text-base shadow-xl shadow-blue-600/20">
+                      <Button size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 h-12 text-base shadow-xl shadow-blue-600/20">
                         Sign In to Platform
                         <ArrowRight className="w-5 h-5 ml-2" />
                       </Button>
                     </Link>
                     <Link href="/register" className="w-full sm:w-auto">
-                      <Button size="lg" variant="outline" className="w-full sm:w-auto border-slate-300 text-slate-700 bg-white hover:bg-slate-50 h-12 text-base px-7">
+                      <Button size="lg" variant="outline" className="w-full sm:w-auto border-slate-300 text-slate-700 bg-white hover:bg-slate-50 h-12 text-base px-7 font-bold">
                         Register Account
                       </Button>
                     </Link>
@@ -237,10 +238,10 @@ export default function Home() {
                 )}
               </div>
 
-              <div className="flex items-center gap-6 pt-4 border-t border-slate-200/80 text-xs text-slate-500 font-medium">
+              <div className="flex items-center gap-6 pt-4 border-t border-slate-200/80 text-xs text-slate-600 font-semibold">
                 <span className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  100% Audit Logging
+                  100% Audit Traceability
                 </span>
                 <span className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-blue-600" />
@@ -262,7 +263,7 @@ export default function Home() {
                     <span className="w-3 h-3 rounded-full bg-amber-400" />
                     <span className="w-3 h-3 rounded-full bg-emerald-400" />
                   </div>
-                  <span className="text-[11px] font-mono text-slate-500 font-medium">
+                  <span className="text-[11px] font-mono text-slate-500 font-semibold">
                     Procurement Platform — Executive View
                   </span>
                 </div>
@@ -270,30 +271,30 @@ export default function Home() {
                 <div className="relative rounded-lg overflow-hidden border border-slate-200">
                   <img
                     src="/images/hero_dashboard.png"
-                    alt="Procurement Platform Enterprise Dashboard UI Mockup"
+                    alt="Procurement Platform Executive Dashboard UI Mockup"
                     className="w-full h-auto object-cover rounded-lg"
                   />
                 </div>
               </div>
 
-              {/* Floating Badge 1 */}
-              <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-xl border border-slate-200 shadow-xl hidden sm:flex items-center gap-3">
+              {/* Floating Metric 1 */}
+              <div className="absolute -bottom-5 -left-5 bg-white p-4 rounded-xl border border-slate-200/90 shadow-xl hidden sm:flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
-                  <TrendingUp className="w-5 h-5" />
+                  <TrendingUp className="w-5 h-5 stroke-[2.2]" />
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400 font-medium">Total Spend Control</p>
-                  <p className="text-base font-bold text-slate-900">$1,420,000.00</p>
+                  <p className="text-xs text-slate-500 font-medium">Total Spend Control</p>
+                  <p className="text-base font-extrabold text-slate-900">$1,420,000.00</p>
                 </div>
               </div>
 
-              {/* Floating Badge 2 */}
-              <div className="absolute -top-6 -right-6 bg-white p-3.5 rounded-xl border border-slate-200 shadow-xl hidden sm:flex items-center gap-3">
+              {/* Floating Metric 2 */}
+              <div className="absolute -top-5 -right-5 bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-xl hidden sm:flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
-                  <ShieldCheck className="w-5 h-5" />
+                  <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-900">100% Audit Verified</p>
+                  <p className="text-xs font-extrabold text-slate-900">100% Audit Verified</p>
                   <p className="text-[11px] text-slate-500 font-medium">Strict Compliance</p>
                 </div>
               </div>
@@ -327,10 +328,10 @@ export default function Home() {
       <section id="features" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-3">
+            <h2 className="text-xs font-extrabold uppercase tracking-widest text-blue-600 mb-3">
               Core Platform Features
             </h2>
-            <p className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
+            <p className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
               Designed for Speed, Governance & Cost Control
             </p>
           </div>
@@ -342,53 +343,53 @@ export default function Home() {
                 title: 'Purchase Requests & Approvals',
                 description: 'Employees submit item requests with budget allocations. Department managers review and action approvals instantly.',
                 color: 'text-blue-600',
-                bg: 'bg-blue-50 border-blue-100',
+                bg: 'bg-gradient-to-br from-blue-50 to-indigo-50/50 border-blue-100',
               },
               {
                 icon: FileText,
                 title: 'RFQ Broadcast & Bidding',
                 description: 'Procurement teams publish RFQs to invited or public vendors to solicit competitive quotation proposals.',
                 color: 'text-indigo-600',
-                bg: 'bg-indigo-50 border-indigo-100',
+                bg: 'bg-gradient-to-br from-indigo-50 to-purple-50/50 border-indigo-100',
               },
               {
                 icon: Gavel,
                 title: 'Bid Comparison & Awarding',
                 description: 'Compare supplier bids side-by-side with lowest-price indicators and scoring matrix before awarding contracts.',
                 color: 'text-purple-600',
-                bg: 'bg-purple-50 border-purple-100',
+                bg: 'bg-gradient-to-br from-purple-50 to-pink-50/50 border-purple-100',
               },
               {
                 icon: Package,
                 title: 'Purchase Order Generation',
                 description: 'Generate legal Purchase Orders automatically with line item details, terms, and direct PDF downloads.',
                 color: 'text-emerald-600',
-                bg: 'bg-emerald-50 border-emerald-100',
+                bg: 'bg-gradient-to-br from-emerald-50 to-teal-50/50 border-emerald-100',
               },
               {
                 icon: Receipt,
                 title: 'Invoice & Payment Tracking',
                 description: 'Vendors upload invoices against active POs. Finance teams review line items, match limits, and record payments.',
                 color: 'text-teal-600',
-                bg: 'bg-teal-50 border-teal-100',
+                bg: 'bg-gradient-to-br from-teal-50 to-cyan-50/50 border-teal-100',
               },
               {
                 icon: Shield,
                 title: 'Audit Logging & Compliance',
                 description: 'Complete audit logging records every request, manager approval, status change, and payment transaction.',
                 color: 'text-rose-600',
-                bg: 'bg-rose-50 border-rose-100',
+                bg: 'bg-gradient-to-br from-rose-50 to-red-50/50 border-rose-100',
               },
             ].map((feature, idx) => (
               <div
                 key={idx}
-                className="p-8 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-blue-200 transition-all"
+                className="p-8 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all"
               >
                 <div className={`w-12 h-12 rounded-xl ${feature.bg} border flex items-center justify-center mb-6`}>
-                  <feature.icon className={`w-6 h-6 ${feature.color}`} />
+                  <feature.icon className={`w-6 h-6 ${feature.color} stroke-[2.2]`} />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">{feature.title}</h3>
-                <p className="text-sm text-slate-600 leading-relaxed">{feature.description}</p>
+                <h3 className="text-xl font-extrabold text-slate-900 mb-3">{feature.title}</h3>
+                <p className="text-sm text-slate-600 font-medium leading-relaxed">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -399,10 +400,10 @@ export default function Home() {
       <section id="roles" className="py-20 bg-slate-50 border-t border-slate-200/80">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-3">
+            <h2 className="text-xs font-extrabold uppercase tracking-widest text-blue-600 mb-3">
               Role-Based Access
             </h2>
-            <p className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
+            <p className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
               Tailored Workflows for Every Role
             </p>
           </div>
@@ -418,13 +419,13 @@ export default function Home() {
             ].map((item) => (
               <div key={item.role} className="p-6 rounded-xl bg-white border border-slate-200 shadow-2xs hover:border-blue-300 transition-colors">
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+                  <span className="text-xs font-extrabold px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
                     {item.role}
                   </span>
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 </div>
-                <h4 className="font-bold text-slate-900 text-lg mb-2">{item.title}</h4>
-                <p className="text-xs text-slate-600 leading-relaxed">{item.desc}</p>
+                <h4 className="font-extrabold text-slate-900 text-lg mb-2">{item.title}</h4>
+                <p className="text-xs text-slate-600 font-medium leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -438,24 +439,24 @@ export default function Home() {
             {/* Column 1: About Us */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
-                  <Package2 className="h-4 w-4" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-sm">
+                  <Package2 className="h-4 w-4 stroke-[2.2]" />
                 </div>
-                <p className="text-base font-bold text-slate-900">
+                <p className="text-base font-extrabold text-slate-900">
                   Procurement Platform
                 </p>
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed">
+              <p className="text-xs text-slate-500 font-medium leading-relaxed">
                 Enterprise Procurement & Vendor Management System delivering transparent purchase workflows, competitive supplier bidding, automated purchase order creation, and audit-ready compliance.
               </p>
             </div>
 
             {/* Column 2: Quick Links */}
             <div>
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4">
+              <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-4">
                 Quick Links
               </h4>
-              <ul className="space-y-2.5 text-xs font-medium">
+              <ul className="space-y-2.5 text-xs font-semibold">
                 <li>
                   <Link href="/dashboard" className="hover:text-blue-600 transition-colors">
                     Dashboard Overview
@@ -486,10 +487,10 @@ export default function Home() {
 
             {/* Column 3: Platform Modules */}
             <div>
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4">
+              <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-4">
                 Modules
               </h4>
-              <ul className="space-y-2.5 text-xs font-medium">
+              <ul className="space-y-2.5 text-xs font-semibold">
                 <li>
                   <Link href="/approvals" className="hover:text-blue-600 transition-colors">
                     Manager Approvals
@@ -520,20 +521,20 @@ export default function Home() {
 
             {/* Column 4: Security & Specs */}
             <div>
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4">
+              <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-4">
                 Security & Specs
               </h4>
-              <div className="space-y-2 text-xs text-slate-500">
+              <div className="space-y-2 text-xs text-slate-600 font-medium">
                 <p className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 stroke-[2.2]" />
                   Role-Based Access Control (RBAC)
                 </p>
                 <p className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-blue-600" />
+                  <ShieldCheck className="w-4 h-4 text-blue-600 stroke-[2.2]" />
                   JWT Auth & Encrypted Sessions
                 </p>
                 <p className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                  <ShieldCheck className="w-4 h-4 text-indigo-600 stroke-[2.2]" />
                   Automated Stream Audit Logging
                 </p>
               </div>
