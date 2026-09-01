@@ -20,6 +20,8 @@ import {
   Users,
   ShieldCheck,
   TrendingUp,
+  BarChart3,
+  Check,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuth'
@@ -27,6 +29,7 @@ import { useAuth } from '@/hooks/useAuth'
 export default function Home() {
   const { user, logout, isLoggingOut } = useAuth()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [imageError, setImageError] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Close dropdown on click outside
@@ -183,7 +186,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             
-            {/* Left Column: Clean, tightly-proportioned typography & CTAs */}
+            {/* Left Column: Clean typography & CTAs */}
             <div className="lg:col-span-6 space-y-5 text-left">
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.16]">
                 Streamline your next <br className="hidden sm:inline" />
@@ -244,7 +247,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right Column: Clean, perfectly aligned Dashboard UI Image */}
+            {/* Right Column: High-Speed CDN Image + Live Interactive Dashboard Card Fallback */}
             <div className="lg:col-span-6 relative">
               <div className="relative rounded-xl bg-white border border-slate-200 shadow-xl p-2 overflow-hidden">
                 <div className="flex items-center justify-between px-3 py-1.5 bg-slate-100/90 rounded-md mb-2">
@@ -258,13 +261,51 @@ export default function Home() {
                   </span>
                 </div>
 
-                <div className="relative rounded-md overflow-hidden border border-slate-200/80">
-                  <img
-                    src="/images/hero_dashboard.png"
-                    alt="Procurement Platform Executive Dashboard"
-                    className="w-full h-auto object-cover rounded-md"
-                  />
-                </div>
+                {!imageError ? (
+                  <div className="relative rounded-md overflow-hidden border border-slate-200/80">
+                    <img
+                      src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1600&q=80"
+                      alt="Procurement Platform Executive Dashboard"
+                      onError={() => setImageError(true)}
+                      className="w-full h-[320px] object-cover rounded-md"
+                    />
+                  </div>
+                ) : (
+                  /* Interactive UI Component Mockup Fallback if image ever fails to load */
+                  <div className="rounded-md border border-slate-200 bg-slate-50 p-4 space-y-4">
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="p-3 bg-white rounded-lg border border-slate-200 shadow-2xs">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Total Spend</p>
+                        <p className="text-base font-extrabold text-slate-900">$1,420,000</p>
+                      </div>
+                      <div className="p-3 bg-white rounded-lg border border-slate-200 shadow-2xs">
+                        <p className="text-[10px] font-bold text-blue-600 uppercase">RFQs Active</p>
+                        <p className="text-base font-extrabold text-blue-600">18 Bids</p>
+                      </div>
+                      <div className="p-3 bg-white rounded-lg border border-slate-200 shadow-2xs">
+                        <p className="text-[10px] font-bold text-emerald-600 uppercase">Approved POs</p>
+                        <p className="text-base font-extrabold text-emerald-600">142 Issued</p>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-white rounded-lg border border-slate-200 shadow-2xs space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                        <span>Supplier Quotation Bids</span>
+                        <span className="text-blue-600">Active Awarding</span>
+                      </div>
+                      <div className="space-y-1.5 text-xs font-medium">
+                        <div className="flex justify-between items-center p-2 rounded bg-emerald-50 text-emerald-900 border border-emerald-200">
+                          <span>GlobalTech Corp — $185,000</span>
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-600 text-white">Lowest Bid</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 rounded bg-slate-50 text-slate-700 border border-slate-200">
+                          <span>Apex Solutions — $192,000</span>
+                          <span className="text-[10px] font-medium text-slate-500">Evaluating</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
