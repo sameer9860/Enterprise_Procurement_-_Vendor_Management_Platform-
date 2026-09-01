@@ -12,7 +12,6 @@ import {
   Gavel,
   Package,
   Receipt,
-  Sparkles,
   LayoutDashboard,
   User,
   LogOut,
@@ -179,18 +178,13 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero Section (Balanced 2-Column Layout with Clean Image & Proportioned Fonts) */}
-      <section className="relative pt-12 pb-16 bg-gradient-to-b from-blue-50/70 via-white to-slate-50 border-b border-slate-200/60 overflow-hidden">
+      {/* Hero Section */}
+      <section className="relative pt-14 pb-16 bg-gradient-to-b from-blue-50/70 via-white to-slate-50 border-b border-slate-200/60 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             
             {/* Left Column: Clean, tightly-proportioned typography & CTAs */}
             <div className="lg:col-span-6 space-y-5 text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100/80 border border-blue-200 text-[11px] font-extrabold text-blue-800 shadow-2xs">
-                <Sparkles className="w-3.5 h-3.5 text-blue-600 fill-blue-600/30" />
-                Enterprise Procurement Platform
-              </div>
-
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.16]">
                 Streamline your next <br className="hidden sm:inline" />
                 <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 bg-clip-text text-transparent">
