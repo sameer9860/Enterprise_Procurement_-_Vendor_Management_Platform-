@@ -91,9 +91,24 @@ export default function CreateRequestPage() {
       router.push(`/requests/${data.id}`)
     },
     onError: (error: any) => {
-      toast.error(
-        error.response?.data?.message || 'Failed to create request'
-      )
+      const apiData = error.response?.data
+      let message = 'Failed to create request'
+      if (typeof apiData === 'string') {
+        message = apiData
+      } else if (apiData?.detail) {
+        message = apiData.detail
+      } else if (apiData?.message) {
+        message = apiData.message
+      } else if (apiData && typeof apiData === 'object') {
+        const firstKey = Object.keys(apiData)[0]
+        const val = apiData[firstKey]
+        if (Array.isArray(val)) {
+          message = `${firstKey}: ${val[0]}`
+        } else if (typeof val === 'string') {
+          message = `${firstKey}: ${val}`
+        }
+      }
+      toast.error(message)
     },
   })
 
