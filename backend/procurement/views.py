@@ -388,16 +388,21 @@ class RFQViewSet(viewsets.ModelViewSet):
         user = self.request.user
         qs = super().get_queryset()
         if user.role == 'VENDOR':
-            # Vendor sees only RFQs they are invited to + open RFQs
             try:
                 vendor = user.vendor_profile
-                return qs.filter(
-                    status='OPEN'
-                ).filter(
-                    Q(invited_vendors=vendor) | Q(invited_vendors__isnull=True)
-                ).distinct()
-            except Vendor.DoesNotExist:
-                return qs.none()
+            except Exception:
+                vendor, _ = Vendor.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        'company_name': user.username,
+                        'registration_number': f"REG-{user.id}",
+                        'address': 'N/A',
+                        'city': 'N/A',
+                        'country': 'N/A',
+                        'status': 'ACTIVE',
+                    }
+                )
+            return qs.filter(status='OPEN')
         elif user.role in ['PROCUREMENT', 'ADMIN']:
             return qs
         elif user.role in ['MANAGER', 'FINANCE']:

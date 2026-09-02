@@ -59,6 +59,20 @@ class UserSerializer(serializers.ModelSerializer):
         user = User(**validated_data)
         user.set_password(password)
         user.save()
+
+        if user.role == 'VENDOR':
+            from procurement.models import Vendor
+            Vendor.objects.get_or_create(
+                user=user,
+                defaults={
+                    'company_name': user.username,
+                    'registration_number': f"REG-{user.id}",
+                    'address': 'N/A',
+                    'city': 'N/A',
+                    'country': 'N/A',
+                    'status': 'ACTIVE',
+                }
+            )
         return user
 
 
