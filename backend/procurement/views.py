@@ -132,12 +132,24 @@ class PurchaseRequestViewSet(viewsets.ModelViewSet):
         return qs.none()
 
     def perform_create(self, serializer):
-        instance = serializer.save(requester=self.request.user, department=self.request.user.department)
-        log_action(self.request.user, 'CREATE', instance, 
+        user = self.request.user
+        department = user.department
+        if not department:
+            from accounts.models import Department
+            department, _ = Department.objects.get_or_create(name='General')
+            if not user.department:
+                user.department = department
+                user.save(update_fields=['department'])
+
+        instance = serializer.save(requester=user, department=department)
+        log_action(user, 'CREATE', instance, 
                     details={"title": instance.title, "budget": str(instance.estimated_budget)}, 
                     request=self.request)
         # Fire async notification to department managers
-        notify_manager_new_request.delay(instance.id)
+        try:
+            notify_manager_new_request.delay(instance.id)
+        except Exception:
+            pass
 
     def perform_update(self, serializer):
         instance = serializer.save()
