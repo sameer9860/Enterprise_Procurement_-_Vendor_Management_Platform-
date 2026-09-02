@@ -261,10 +261,10 @@ class VendorViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         qs = super().get_queryset()
-        if user.role == 'VENDOR':
-            return qs.filter(user=user)
-        elif user.role in ['PROCUREMENT', 'ADMIN', 'MANAGER', 'FINANCE']:
+        if user.is_superuser or user.role in ['PROCUREMENT', 'ADMIN', 'MANAGER', 'FINANCE']:
             return qs
+        elif user.role == 'VENDOR':
+            return qs.filter(user=user)
         return qs.none()
 
     def get_permissions(self):
@@ -282,7 +282,7 @@ class VendorViewSet(viewsets.ModelViewSet):
         instance = serializer.save(user=self.request.user)
         log_action(self.request.user, 'CREATE_VENDOR', instance, request=self.request)
 
-    @action(detail=True, methods=['post'], permission_classes=[IsProcurement])
+    @action(detail=True, methods=['post'], permission_classes=[IsProcurementOrAdmin])
     def verify_vendor(self, request, pk=None):
         vendor = self.get_object()
         serializer = VendorVerifySerializer(data=request.data)
