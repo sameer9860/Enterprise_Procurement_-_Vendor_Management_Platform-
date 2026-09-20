@@ -263,9 +263,9 @@ export default function RegisterPage() {
             initial={{ scale: 0.85 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.1 }}
-            className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white p-2 shadow-lg sm:h-16 sm:w-16 sm:rounded-2xl"
+            className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg sm:h-16 sm:w-16 sm:rounded-2xl"
           >
-            <img src="/images/favicon.png" alt="Logo" className="h-full w-full object-contain" />
+            <ShoppingCart className="h-6 w-6 text-white sm:h-8 sm:w-8" />
           </motion.div>
 
           <div className="space-y-1 text-center sm:space-y-2">

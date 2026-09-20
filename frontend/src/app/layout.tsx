@@ -14,9 +14,13 @@ export const metadata: Metadata = {
   title: 'Procurement Platform',
   description: 'Enterprise Procurement & Vendor Management System',
   icons: {
-    icon: '/images/favicon.png',
-    shortcut: '/images/favicon.png',
-    apple: '/images/favicon.png',
+    icon: [
+      { url: '/favicon.png', type: 'image/png' },
+      { url: '/favicon.ico' },
+      { url: '/images/favicon.png', type: 'image/png' },
+    ],
+    shortcut: '/favicon.png',
+    apple: '/favicon.png',
   },
 }
 
@@ -27,6 +31,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={plusJakartaSans.variable}>
+      <head>
+        <link rel="icon" type="image/png" href="/favicon.png" />
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="shortcut icon" href="/favicon.png" />
+        <link rel="apple-touch-icon" href="/favicon.png" />
+      </head>
       <body className={`${plusJakartaSans.className} antialiased selection:bg-blue-600 selection:text-white`}>
         <QueryProvider>
           {children}

@@ -14,8 +14,8 @@ export default function AuthLayout({
 
           <div className="relative z-10 flex h-full w-full flex-col justify-between p-10 xl:p-16 text-slate-900">
             <div>
-              <div className="mb-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-white p-2.5 shadow-xl xl:mb-10 xl:h-16 xl:w-16">
-                <img src="/images/favicon.png" alt="Logo" className="h-full w-full object-contain" />
+              <div className="mb-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 shadow-xl xl:mb-10 xl:h-16 xl:w-16">
+                <ShoppingCart className="h-7 w-7 text-white xl:h-8 xl:w-8" />
               </div>
 
               <h1 className="max-w-md text-4xl font-bold leading-tight xl:text-5xl">
@@ -55,8 +55,8 @@ export default function AuthLayout({
           <div className="w-full max-w-md">
             {/* Mobile Header */}
             <div className="mb-6 text-center sm:mb-8 lg:hidden">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-white p-2 shadow-lg sm:mb-4 sm:h-16 sm:w-16 sm:rounded-2xl">
-                <img src="/images/favicon.png" alt="Logo" className="h-full w-full object-contain" />
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg sm:mb-4 sm:h-16 sm:w-16 sm:rounded-2xl">
+                <ShoppingCart className="h-6 w-6 text-white sm:h-8 sm:w-8" />
               </div>
 
               <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">

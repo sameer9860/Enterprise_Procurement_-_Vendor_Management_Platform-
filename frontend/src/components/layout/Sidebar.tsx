@@ -85,8 +85,8 @@ export default function Sidebar({ isOpen, collapsed = false, onClose }: SidebarP
             )}
           >
             <div className={cn('flex items-center gap-3', collapsed && 'lg:gap-0')}>
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white p-1.5 shadow-sm border border-slate-100">
-                <img src="/images/favicon.png" alt="Logo" className="h-full w-full object-contain" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
+                <Package2 className="h-4 w-4" />
               </div>
               <div
                 className={cn(
