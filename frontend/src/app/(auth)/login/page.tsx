@@ -171,9 +171,9 @@ export default function LoginPage() {
             initial={{ scale: 0.95 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.05 }}
-            className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 sm:h-14 sm:w-14"
+            className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white p-2 shadow-md sm:h-14 sm:w-14"
           >
-            <ShoppingCart className="h-6 w-6 text-white sm:h-7 sm:w-7" />
+            <img src="/images/favicon.png" alt="Logo" className="h-full w-full object-contain" />
           </motion.div>
 
           <div className="space-y-1 text-center sm:space-y-1.5">
