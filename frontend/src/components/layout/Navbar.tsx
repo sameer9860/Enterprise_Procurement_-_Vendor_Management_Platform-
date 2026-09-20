@@ -37,7 +37,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="text-slate-600 hover:bg-slate-100 lg:hidden"
+          className="text-slate-600 hover:bg-slate-100"
           onClick={onMenuClick}
         >
           <Menu className="h-5 w-5" />

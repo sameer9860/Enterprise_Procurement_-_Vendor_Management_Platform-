@@ -18,14 +18,15 @@ export default function DashboardLayout({
   const pathname = usePathname()
   const { user, setUser, logout } = useAuthStore()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Close sidebar on route change (mobile)
+  // Close mobile sidebar on route change
   useEffect(() => {
     setSidebarOpen(false)
   }, [pathname])
 
-  // Close sidebar on resize to desktop
+  // Close mobile sidebar on resize to desktop
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
@@ -68,14 +69,25 @@ export default function DashboardLayout({
     )
   }
 
+  const handleMenuClick = () => {
+    if (window.innerWidth >= 1024) {
+      // Desktop: toggle collapse
+      setSidebarCollapsed((prev) => !prev)
+    } else {
+      // Mobile: open drawer
+      setSidebarOpen(true)
+    }
+  }
+
   return (
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar
         isOpen={sidebarOpen}
+        collapsed={sidebarCollapsed}
         onClose={() => setSidebarOpen(false)}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <Navbar onMenuClick={() => setSidebarOpen(true)} />
+        <Navbar onMenuClick={handleMenuClick} />
         <main className="flex-1 overflow-auto p-4 lg:p-8">
           <div className="mx-auto max-w-7xl">{children}</div>
         </main>

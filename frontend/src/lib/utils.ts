@@ -24,13 +24,14 @@ export function timeAgo(date: string): string {
   return formatDistanceToNow(new Date(date), { addSuffix: true })
 }
 
-// Format currency
+// Format currency (Nepali Rupees)
 export function formatCurrency(amount: string | number): string {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(num)
+  if (isNaN(num)) return 'रू 0.00'
+  return 'रू ' + num.toLocaleString('en-NP', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
 }
 
 // Get status badge color

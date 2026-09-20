@@ -12,10 +12,11 @@ import { UserRole } from '@/types/auth'
 
 interface SidebarProps {
   isOpen: boolean
+  collapsed?: boolean
   onClose: () => void
 }
 
-export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ isOpen, collapsed = false, onClose }: SidebarProps) {
   const pathname = usePathname()
   const { role } = useRBAC()
   const { logout, isLoggingOut } = useAuth()
@@ -54,6 +55,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <>
+      {/* Mobile backdrop */}
       {isOpen && (
         <div
           className="fixed inset-0 z-20 bg-slate-900/20 backdrop-blur-[1px] lg:hidden"
@@ -64,26 +66,44 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       <aside
         ref={sidebarRef}
         className={cn(
-          'fixed top-0 left-0 z-30 flex h-full w-[17.5rem] flex-col border-r border-slate-200 bg-white shadow-sm transition-transform duration-300',
+          'fixed top-0 left-0 z-30 flex h-full flex-col border-r border-slate-200 bg-white shadow-sm',
+          'transition-all duration-300 ease-in-out',
+          // Mobile: full-width drawer
+          'w-[17.5rem]',
+          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+          // Desktop: static, width toggles
           'lg:static lg:z-auto lg:shadow-none',
-          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          collapsed ? 'lg:w-16' : 'lg:w-[17.5rem]'
         )}
       >
-        <div className="flex min-h-0 flex-1 flex-col">
-          <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 px-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {/* Logo header */}
+          <div
+            className={cn(
+              'flex h-16 shrink-0 items-center border-b border-slate-100 transition-all duration-300',
+              collapsed ? 'lg:justify-center lg:px-0 px-5 justify-between' : 'justify-between px-5'
+            )}
+          >
+            <div className={cn('flex items-center gap-3', collapsed && 'lg:gap-0')}>
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
                 <Package2 className="h-4 w-4" />
               </div>
-              <div>
-                <p className="text-sm font-semibold tracking-tight text-slate-900">
+              <div
+                className={cn(
+                  'transition-all duration-300 overflow-hidden',
+                  collapsed ? 'lg:w-0 lg:opacity-0 lg:pointer-events-none' : 'w-auto opacity-100'
+                )}
+              >
+                <p className="text-sm font-semibold tracking-tight text-slate-900 whitespace-nowrap">
                   Procurement
                 </p>
-                <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">
+                <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400 whitespace-nowrap">
                   Platform
                 </p>
               </div>
             </div>
+
+            {/* Mobile close button */}
             <button
               onClick={onClose}
               className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 lg:hidden"
@@ -93,17 +113,28 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             </button>
           </div>
 
-          <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
+          {/* Navigation */}
+          <nav
+            className={cn(
+              'flex-1 space-y-6 overflow-y-auto py-5 transition-all duration-300',
+              collapsed ? 'lg:px-1.5 px-3' : 'px-3'
+            )}
+          >
             {filteredNavigation.map((group) => (
               <div key={group.title}>
-                <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                {/* Group label — fades out when collapsed on desktop */}
+                <p
+                  className={cn(
+                    'mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 whitespace-nowrap overflow-hidden transition-all duration-300',
+                    collapsed ? 'lg:opacity-0 lg:h-0 lg:mb-0 lg:px-0' : 'opacity-100'
+                  )}
+                >
                   {group.title}
                 </p>
                 <div className="space-y-0.5">
                   {group.items.map((item) => {
                     const isActive =
-                      pathname === item.href ||
-                      pathname.startsWith(item.href + '/')
+                      pathname === item.href || pathname.startsWith(item.href + '/')
                     const Icon = item.icon
 
                     return (
@@ -111,8 +142,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                         key={item.href}
                         href={item.href}
                         onClick={onClose}
+                        title={collapsed ? item.label : undefined}
                         className={cn(
                           'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                          collapsed && 'lg:justify-center lg:px-0',
                           isActive
                             ? 'bg-blue-50 text-blue-700'
                             : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -128,7 +161,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                         >
                           <Icon className="h-4 w-4" />
                         </span>
-                        <span>{item.label}</span>
+                        <span
+                          className={cn(
+                            'transition-all duration-300 overflow-hidden whitespace-nowrap',
+                            collapsed ? 'lg:w-0 lg:opacity-0 lg:pointer-events-none' : 'w-auto opacity-100'
+                          )}
+                        >
+                          {item.label}
+                        </span>
                       </Link>
                     )
                   })}
@@ -138,14 +178,31 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </nav>
         </div>
 
-        <div className="shrink-0 border-t border-slate-100 bg-slate-50/80 p-4">
+        {/* Footer sign-out */}
+        <div
+          className={cn(
+            'shrink-0 border-t border-slate-100 bg-slate-50/80 p-4 transition-all duration-300',
+            collapsed && 'lg:p-2'
+          )}
+        >
           <button
             onClick={() => logout()}
             disabled={isLoggingOut}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50"
+            title={collapsed ? (isLoggingOut ? 'Signing out...' : 'Sign out') : undefined}
+            className={cn(
+              'flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50',
+              collapsed && 'lg:justify-center lg:px-2'
+            )}
           >
-            <LogOut className="h-4 w-4 text-slate-500" />
-            <span>{isLoggingOut ? 'Signing out...' : 'Sign out'}</span>
+            <LogOut className="h-4 w-4 shrink-0 text-slate-500" />
+            <span
+              className={cn(
+                'transition-all duration-300 overflow-hidden whitespace-nowrap',
+                collapsed ? 'lg:w-0 lg:opacity-0 lg:pointer-events-none' : 'w-auto opacity-100'
+              )}
+            >
+              {isLoggingOut ? 'Signing out...' : 'Sign out'}
+            </span>
           </button>
         </div>
       </aside>
