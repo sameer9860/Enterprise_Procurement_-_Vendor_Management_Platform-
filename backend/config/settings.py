@@ -166,19 +166,27 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 import dj_database_url
 
-DATABASE_URL = config('DATABASE_URL', default=None)
-if DATABASE_URL:
-    DATABASES = {
-        'default': dj_database_url.parse(
+DATABASE_URL = config('DATABASE_URL', default='').strip()
+
+db_config = None
+if DATABASE_URL and DATABASE_URL.startswith(('postgres://', 'postgresql://')):
+    try:
+        parsed = dj_database_url.parse(
             DATABASE_URL,
             conn_max_age=60,
             ssl_require=not DEBUG
         )
-    }
+        if parsed and parsed.get('NAME'):
+            db_config = parsed
+    except Exception:
+        pass
+
+if db_config:
+    DATABASES = {'default': db_config}
 else:
     # If explicit DB env vars are provided, use them. Otherwise fall back to SQLite
-    # to avoid build-time failures when deploy build environment doesn't supply DB creds.
-    DB_NAME = config('DB_NAME', default=None)
+    # to avoid build-time failures when deploy environment doesn't supply valid DB creds.
+    DB_NAME = config('DB_NAME', default='').strip()
     if DB_NAME:
         DATABASES = {
             'default': {
@@ -188,6 +196,7 @@ else:
                 'PASSWORD': config('DB_PASSWORD', default=''),
                 'HOST': config('DB_HOST', default=''),
                 'PORT': config('DB_PORT', default=''),
+                'CONN_MAX_AGE': 60,
             }
         }
     else:
