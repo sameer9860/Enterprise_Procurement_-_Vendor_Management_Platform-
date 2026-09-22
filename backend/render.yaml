@@ -5,7 +5,7 @@ services:
     region: oregon
     plan: free
     buildCommand: ./build.sh
-    startCommand: gunicorn config.wsgi:application --config gunicorn.conf.py
+    startCommand: ./entrypoint.sh gunicorn config.wsgi:application --config gunicorn.conf.py
     envVars:
       - key: DJANGO_ENV
         value: production
