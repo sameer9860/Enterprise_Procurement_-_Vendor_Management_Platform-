@@ -203,7 +203,7 @@ export default function Sidebar({ isOpen, collapsed = false, onClose }: SidebarP
                 collapsed ? 'lg:w-0 lg:opacity-0 lg:pointer-events-none' : 'w-auto opacity-100'
               )}
             >
-              {isLoggingOut ? 'Signing out...' : 'Sign out'}
+              {isLoggingOut ? 'Signing out...' : 'Logout'}
             </span>
           </button>
         </div>

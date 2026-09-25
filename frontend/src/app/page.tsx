@@ -155,7 +155,7 @@ export default function Home() {
                         className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-50 cursor-pointer"
                       >
                         <LogOut className="h-4 w-4 text-rose-500" />
-                        <span>{isLoggingOut ? 'Signing out...' : 'Sign out'}</span>
+                        <span>{isLoggingOut ? 'Signing out...' : 'Logout'}</span>
                       </button>
                     </div>
                   )}

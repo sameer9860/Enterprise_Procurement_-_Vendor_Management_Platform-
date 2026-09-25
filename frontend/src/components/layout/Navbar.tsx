@@ -118,7 +118,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                 className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 <LogOut className="h-4 w-4 text-red-500" />
-                <span>{isLoggingOut ? 'Signing out...' : 'Sign out'}</span>
+                <span>{isLoggingOut ? 'Signing out...' : 'Logout'}</span>
               </button>
             </div>
           )}
