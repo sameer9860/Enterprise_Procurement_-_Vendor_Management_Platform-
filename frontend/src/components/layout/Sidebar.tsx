@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LogOut, X, Package2 } from 'lucide-react'
@@ -9,6 +9,7 @@ import { navigation } from '@/config/navigation'
 import { useRBAC } from '@/hooks/useRBAC'
 import { useAuth } from '@/hooks/useAuth'
 import { UserRole } from '@/types/auth'
+import LogoutConfirmation from '@/components/shared/LogoutConfirmation'
 
 interface SidebarProps {
   isOpen: boolean
@@ -20,6 +21,7 @@ export default function Sidebar({ isOpen, collapsed = false, onClose }: SidebarP
   const pathname = usePathname()
   const { role } = useRBAC()
   const { logout, isLoggingOut } = useAuth()
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
   const touchStartX = useRef<number>(0)
   const sidebarRef = useRef<HTMLElement>(null)
 
@@ -186,7 +188,7 @@ export default function Sidebar({ isOpen, collapsed = false, onClose }: SidebarP
           )}
         >
           <button
-            onClick={() => logout()}
+            onClick={() => setIsLogoutConfirmOpen(true)}
             disabled={isLoggingOut}
             title={collapsed ? (isLoggingOut ? 'Signing out...' : 'Sign out') : undefined}
             className={cn(
@@ -206,6 +208,16 @@ export default function Sidebar({ isOpen, collapsed = false, onClose }: SidebarP
           </button>
         </div>
       </aside>
+
+      <LogoutConfirmation
+        isOpen={isLogoutConfirmOpen}
+        onClose={() => setIsLogoutConfirmOpen(false)}
+        onConfirm={() => {
+          setIsLogoutConfirmOpen(false)
+          logout()
+        }}
+        isLoading={isLoggingOut}
+      />
     </>
   )
 }

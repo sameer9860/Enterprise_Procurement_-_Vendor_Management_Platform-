@@ -25,10 +25,12 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuth'
+import LogoutConfirmation from '@/components/shared/LogoutConfirmation'
 
 export default function Home() {
   const { user, logout, isLoggingOut } = useAuth()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
   const [imageError, setImageError] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -147,7 +149,7 @@ export default function Home() {
                       <button
                         onClick={() => {
                           setIsDropdownOpen(false)
-                          logout()
+                          setIsLogoutConfirmOpen(true)
                         }}
                         disabled={isLoggingOut}
                         className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-50 cursor-pointer"
@@ -158,6 +160,16 @@ export default function Home() {
                     </div>
                   )}
                 </div>
+
+                <LogoutConfirmation
+                  isOpen={isLogoutConfirmOpen}
+                  onClose={() => setIsLogoutConfirmOpen(false)}
+                  onConfirm={() => {
+                    setIsLogoutConfirmOpen(false)
+                    logout()
+                  }}
+                  isLoading={isLoggingOut}
+                />
               </>
             ) : (
               <>
