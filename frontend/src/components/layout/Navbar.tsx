@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuth'
 import { useRBAC } from '@/hooks/useRBAC'
 import Link from 'next/link'
+import LogoutConfirmation from '@/components/shared/LogoutConfirmation'
 
 interface NavbarProps {
   onMenuClick: () => void
@@ -15,6 +16,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   const { logout, isLoggingOut } = useAuth()
   const { user } = useRBAC()
   const [isOpen, setIsOpen] = useState(false)
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Close dropdown on click outside
@@ -110,7 +112,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
               <button
                 onClick={() => {
                   setIsOpen(false)
-                  logout()
+                  setIsLogoutConfirmOpen(true)
                 }}
                 disabled={isLoggingOut}
                 className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 cursor-pointer"
@@ -122,6 +124,16 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           )}
         </div>
       </div>
+
+      <LogoutConfirmation
+        isOpen={isLogoutConfirmOpen}
+        onClose={() => setIsLogoutConfirmOpen(false)}
+        onConfirm={() => {
+          setIsLogoutConfirmOpen(false)
+          logout()
+        }}
+        isLoading={isLoggingOut}
+      />
     </header>
   )
 }
